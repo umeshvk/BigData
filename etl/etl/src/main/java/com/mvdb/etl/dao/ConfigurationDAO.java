@@ -17,6 +17,11 @@ public interface ConfigurationDAO
     
     public int getCustomerCount();
 
-    public void update(Configuration configuration);
+    public int update(Configuration configuration, String requiredOldValue);
+    
+    public void executeSQl(String[] sqlList);
+    
+    public boolean acquireLock(String customer, String name);
+    public boolean releaseLock(String customer, String name);
 
 }

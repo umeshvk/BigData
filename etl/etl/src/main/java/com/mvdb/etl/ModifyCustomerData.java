@@ -9,7 +9,7 @@ import com.mvdb.etl.dao.OrderDAO;
 import com.mvdb.etl.model.Order;
 import com.mvdb.etl.util.RandomUtil;
 
-public class ModifyDB
+public class ModifyCustomerData
 {
 
     public static void main(String[] args)

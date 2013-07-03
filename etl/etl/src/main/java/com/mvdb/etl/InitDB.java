@@ -1,60 +1,25 @@
 package com.mvdb.etl;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-import org.apache.commons.cli.PosixParser;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
+import com.mvdb.etl.dao.ConfigurationDAO;
 import com.mvdb.etl.dao.OrderDAO;
-import com.mvdb.etl.model.Order;
-import com.mvdb.etl.util.RandomUtil;
 
 public class InitDB
 {
     public static void main(String[] args)
     {
 
-        String customerName= null; 
-        int batchCountF = 0;
-        int batchSizeF = 0;
-        final CommandLineParser cmdLinePosixParser = new PosixParser();
-        final Options posixOptions = constructPosixOptions();
-        CommandLine commandLine;
-        try
-        {
-            commandLine = cmdLinePosixParser.parse(posixOptions, args);
-            if (commandLine.hasOption("customer"))
-            {
-                customerName = commandLine.getOptionValue("customer");
-            }
-            if (commandLine.hasOption("batchSize"))
-            {
-                String batchSizeStr = commandLine.getOptionValue("batchSize");
-                batchSizeF = Integer.parseInt(batchSizeStr);
-            }
-            if (commandLine.hasOption("batchCount"))
-            {
-                String batchCountStr = commandLine.getOptionValue("batchCount");
-                batchCountF = Integer.parseInt(batchCountStr);
-            }
-        } catch (ParseException parseException) // checked exception
-        {
-            System.err
-                    .println("Encountered exception while parsing using PosixParser:\n" + parseException.getMessage());
-        }
-
-        // if you have time,
-        // it's better to create an unit test rather than testing like this :)
-
         ApplicationContext context = new ClassPathXmlApplicationContext("Spring-Module.xml");
 
+        createConfiguration(context);
+        createOrder(context);
+
+    }
+
+    private static void createOrder(ApplicationContext context)
+    {
         final OrderDAO orderDAO = (OrderDAO) context.getBean("orderDAO");
 
         String[] commands = {
@@ -68,51 +33,26 @@ public class InitDB
 
         
         orderDAO.executeSQl(commands);
-
-        final long tm = new Date().getTime();
-        final int batchCount = batchCountF;
-        final int batchSize = batchSizeF;
-        for (int batchIndex = 0; batchIndex < batchCount; batchIndex++)
-        {
-            final int batchIndexFinal = batchIndex;
-            TimedExecutor te = new TimedExecutor() {
-
-                @Override
-                public void execute()
-                {
-
-                    List<Order> orders = new ArrayList<Order>();
-                    for (int recordIndex = 0; recordIndex < batchSize; recordIndex++)
-                    {
-                        Order order = new Order(orderDAO.getNextSequenceValue(), RandomUtil.getRandomString(5),
-                                RandomUtil.getRandomInt(), new Date(tm), new Date(tm));
-                        orders.add(order);
-                    }
-                    orderDAO.insertBatch(orders);
-                    System.out.println(String.format("Completed Batch %d of %d where size of batch is %s",
-                            batchIndexFinal + 1, batchCount, batchSize));
-                }
-
-            };
-            long runTime = te.timedExecute();
-            System.out.println("Ran for seconds: " + runTime / 1000);
-        }
-
-        int total = orderDAO.findTotalOrders();
-        System.out.println("Total : " + total);
-
-        long max = orderDAO.findMaxId();
-        System.out.println("maxid : " + max);
-
+        
     }
 
-    public static Options constructPosixOptions()
+    private static void createConfiguration(ApplicationContext context)
     {
-        final Options posixOptions = new Options();
-        posixOptions.addOption("batchCount", true, "Bumber of batches. Each batch is a transaction.");
-        posixOptions.addOption("batchSize", true, "Number of records inserted in each batch");
-        return posixOptions;
+        final ConfigurationDAO configurationDAO = (ConfigurationDAO) context.getBean("configurationDAO");
+
+        String[] commands = {
+                "DROP TABLE IF EXISTS configuration;",
+                "CREATE TABLE  configuration (" + " customer varchar(128)  NOT NULL, " + " name varchar(128)  NOT NULL,"
+                        + " value varchar(128)  NOT NULL, " + "UNIQUE (customer, name, value)); ", 
+                "INSERT INTO configuration (customer, name, value) VALUES  ('global', 'data_root', '/home/umesh/data/etl');", 
+                 "COMMIT;" };
+
+        
+        configurationDAO.executeSQl(commands);
+        
     }
+
+
 }
 
 // Order order1 = new Order(orderDAO.getNextSequenceValue(),

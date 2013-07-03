@@ -2,22 +2,17 @@ package com.mvdb.etl.dao.impl;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.support.JdbcDaoSupport;
 
-import com.mvdb.etl.Consumer;
-import com.mvdb.etl.SequenceNames;
 import com.mvdb.etl.dao.ConfigurationDAO;
 import com.mvdb.etl.model.Configuration;
 import com.mvdb.etl.model.ConfigurationRowMapper;
 import com.mvdb.etl.model.Order;
-import com.mvdb.etl.model.OrderRowMapper;
 
 public class JdbcConfigurationDAO extends JdbcDaoSupport implements ConfigurationDAO
 {
@@ -67,23 +62,107 @@ public class JdbcConfigurationDAO extends JdbcDaoSupport implements Configuratio
     }
 
 
-
     @Override
-    public void update(Configuration configuration)
+    public boolean acquireLock(String customer, String name)
     {
-        getJdbcTemplate().update(
-                "update configuration set value = ? where customer = ? AND name = ?", new Object[] { 
-                        configuration.getValue(), configuration.getCustomer(), configuration.getName()});
-        
+        Configuration configuration = new Configuration();
+        configuration.setCustomer(customer);
+        configuration.setName(name);
+        configuration.setValue("1");
+        int updateCount = update(configuration, "0");
+        if(updateCount == 0)
+        {
+            return false;
+        }
+        return true;
     }
 
+
+    @Override
+    public boolean releaseLock(String customer, String name)
+    {
+        Configuration configuration = new Configuration();
+        configuration.setCustomer(customer);
+        configuration.setName(name);
+        configuration.setValue("0");
+        int updateCount = update(configuration, "1");
+        if(updateCount == 0)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public int update(Configuration configuration, String requiredOldValue)
+    {
+        int updateCount = -1;
+        if(requiredOldValue == null)
+        {
+           updateCount = 
+                getJdbcTemplate().update(
+                        "update configuration set value = ? where customer = ? AND name = ?", new Object[] { 
+                        configuration.getValue(), 
+                        configuration.getCustomer(), 
+                        configuration.getName()});
+        } else 
+        {
+            updateCount =
+                getJdbcTemplate().update(
+                          "update configuration set value = ? where customer = ? AND name = ? AND value = ? ", new Object[] { 
+                           configuration.getValue(), 
+                           configuration.getCustomer(), 
+                           configuration.getName(), 
+                           requiredOldValue});
+        }
+        
+        return updateCount;
+    }
+
+
+    
 
     @Override
     public List<Configuration> findAll()
     {
-        // TODO Auto-generated method stub
-        return null;
+      String sql = "SELECT * FROM configuration";        
+      List<Configuration> configurations = findAll(sql);
+      return configurations;
     }
+
+
+    private List<Configuration> findAll(String sql)
+    {
+        List<Configuration> configurations = new ArrayList<Configuration>();
+
+        List<Map> rows = getJdbcTemplate().queryForList(sql);
+        for (Map row : rows)
+        {
+            Configuration configuration = new Configuration();
+            configuration.setCustomer((String) (row.get("customer")));
+            configuration.setName((String) row.get("name"));
+            configuration.setValue((String) row.get("value"));
+            configurations.add(configuration);
+        }
+
+        return configurations;
+        
+       
+    }
+
+
+    @Override
+    public void executeSQl(String[] sqlList)
+    {
+
+        for (String sql : sqlList)
+        {
+            getJdbcTemplate().update(sql);
+        }
+    }
+
+
+
     
 
     

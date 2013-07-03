@@ -8,6 +8,10 @@ http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
 		<property name="dataSource" ref="dataSource" />
 	</bean>
 	
+	<bean id="configurationDAO" class="com.mvdb.etl.dao.impl.JdbcConfigurationDAO">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+	
 	<!-- 
 	
 	<bean id="orderLineItemDAO" class="com.mvdb.etl.dao.impl.JdbcOrderLineItemDAO">
