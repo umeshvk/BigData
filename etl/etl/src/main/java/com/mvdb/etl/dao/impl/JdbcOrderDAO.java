@@ -2,10 +2,12 @@ package com.mvdb.etl.dao.impl;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -14,6 +16,7 @@ import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.support.JdbcDaoSupport;
 
 import com.mvdb.etl.Consumer;
+import com.mvdb.etl.ColumnMetadata;
 import com.mvdb.etl.SequenceNames;
 import com.mvdb.etl.dao.OrderDAO;
 import com.mvdb.etl.model.Order;
@@ -85,26 +88,22 @@ public class JdbcOrderDAO extends JdbcDaoSupport implements OrderDAO
 
         return orders;
     }
-    
+
     /*
-    private void findAll(String sql, Consumer consumer)
-    {
+     * private void findAll(String sql, Consumer consumer) {
+     * 
+     * List<Map> rows = getJdbcTemplate().queryForList(sql); for (Map row :
+     * rows) { Order order = new Order(); order.setOrderId((Long)
+     * (row.get("order_id"))); order.setNote((String) row.get("note"));
+     * order.setSaleCode((Integer) row.get("sale_code"));
+     * order.setCreateTime(new java.util.Date(((java.sql.Timestamp)
+     * row.get("create_time")).getTime())); order.setUpdateTime(new
+     * java.util.Date(((java.sql.Timestamp) row.get("update_time")).getTime()));
+     * consumer.consume(order); }
+     * 
+     * }
+     */
 
-        List<Map> rows = getJdbcTemplate().queryForList(sql);
-        for (Map row : rows)
-        {
-            Order order = new Order();
-            order.setOrderId((Long) (row.get("order_id")));
-            order.setNote((String) row.get("note"));
-            order.setSaleCode((Integer) row.get("sale_code"));
-            order.setCreateTime(new java.util.Date(((java.sql.Timestamp) row.get("create_time")).getTime()));
-            order.setUpdateTime(new java.util.Date(((java.sql.Timestamp) row.get("update_time")).getTime()));
-            consumer.consume(order);
-        }
-
-    }
-    */
-    
     private List<Order> findAll(String sql)
     {
         List<Order> orders = new ArrayList<Order>();
@@ -123,36 +122,72 @@ public class JdbcOrderDAO extends JdbcDaoSupport implements OrderDAO
 
         return orders;
     }
+
+    // @Override
+    // public List<Order> findAll(Timestamp modifiedAfter)
+    // {
+    // // TODO Auto-generated method stub
+    // return null;
+    // }
+
+
     
-//    @Override
-//    public List<Order> findAll(Timestamp modifiedAfter)
-//    {
-//        // TODO Auto-generated method stub
-//        return null;
-//    }
+    @Override
+    public Map<String, ColumnMetadata> findMetadata()
+    {
+        String sql = "SELECT * FROM ORDERS limit 1";
+        final Map<String, ColumnMetadata> metaDataMap = new HashMap<String , ColumnMetadata>();
+        
+        
+        getJdbcTemplate().query(sql, new RowCallbackHandler() {
+
+            @Override
+            public void processRow(ResultSet row) throws SQLException
+            {
+                ResultSetMetaData rsm = row.getMetaData();
+                int columnCount = rsm.getColumnCount();
+                for(int column=1;column<(columnCount+1);column++)
+                {
+                    ColumnMetadata metadata = new ColumnMetadata();
+                    metadata.setColumnLabel(rsm.getColumnLabel(column));
+                    metadata.setColumnName(rsm.getColumnName(column));
+                    metadata.setColumnType(rsm.getColumnType(column));
+                    metadata.setColumnTypeName(rsm.getColumnTypeName(column));
+                    
+                    metaDataMap.put(rsm.getColumnName(column), metadata);
+                }
+                
+            }
+        });
+        
+        return metaDataMap; 
+    }
     
     @Override
     public void findAll(Timestamp modifiedAfter, final Consumer consumer)
     {
         String sql = "SELECT * FROM ORDERS where orders.update_time >= ?";
+
         
-        getJdbcTemplate().query(sql, new Object[] {modifiedAfter},  new RowCallbackHandler(){
+        getJdbcTemplate().query(sql, new Object[] { modifiedAfter }, new RowCallbackHandler() {
 
             @Override
             public void processRow(ResultSet row) throws SQLException
             {
+                
                 Order order = new Order();
                 order.setOrderId(row.getLong("order_id"));
                 order.setNote(row.getString("note"));
                 order.setSaleCode(row.getInt("sale_code"));
-                
-                Date createTime = new java.util.Date(row.getTimestamp("create_time").getTime()); 
+
+                Date createTime = new java.util.Date(row.getTimestamp("create_time").getTime());
                 order.setCreateTime(createTime);
-                Date updateTime = new java.util.Date(row.getTimestamp("update_time").getTime()); 
-                order.setUpdateTime(updateTime);   
-                
+                Date updateTime = new java.util.Date(row.getTimestamp("update_time").getTime());
+                order.setUpdateTime(updateTime);
+
                 consumer.consume(order);
-            }}) ;
+            }
+        });
     }
 
     @Override
@@ -195,24 +230,18 @@ public class JdbcOrderDAO extends JdbcDaoSupport implements OrderDAO
 
         return value;
     }
-    
+
     /**
-     *     long   orderId;
-    String note;
-    int    saleCode;
-    Date   createTime;
-    Date   updateTime;
+     * long orderId; String note; int saleCode; Date createTime; Date
+     * updateTime;
+     * 
      * @param order
      */
-    public void update(Order order) {
+    public void update(Order order)
+    {
         long tm = new Date().getTime();
-        getJdbcTemplate().update(
-                "update orders set note = ?, sale_code = ?, update_time = ? where order_id = ?", new Object[] { 
-                order.getNote(), order.getSaleCode(), new java.sql.Timestamp(tm), order.getOrderId()});
+        getJdbcTemplate().update("update orders set note = ?, sale_code = ?, update_time = ? where order_id = ?",
+                new Object[] { order.getNote(), order.getSaleCode(), new java.sql.Timestamp(tm), order.getOrderId() });
     }
-
-
-
-
 
 }

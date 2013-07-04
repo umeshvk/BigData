@@ -2,12 +2,16 @@ package com.mvdb.etl.dao;
 
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Map;
 
 import com.mvdb.etl.Consumer;
+import com.mvdb.etl.ColumnMetadata;
 import com.mvdb.etl.model.Order;
 
 public interface OrderDAO
 {
+    public Map<String, ColumnMetadata> findMetadata(); 
+    
     public void insert(Order order);
 
     public void insertBatch(List<Order> customer);

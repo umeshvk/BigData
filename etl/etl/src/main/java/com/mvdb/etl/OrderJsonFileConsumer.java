@@ -23,7 +23,7 @@ public class OrderJsonFileConsumer implements Consumer
         Order order = (Order)object;
         try
         {
-            FileUtils.writeStringToFile(file, order.toString() + System.getProperty("line.separator"), true);
+            FileUtils.writeStringToFile(new File(file, Order.class.getCanonicalName() + ".json"), order.toString() + System.getProperty("line.separator"), true);
         } catch (IOException e)
         {
             // TODO Auto-generated catch block
