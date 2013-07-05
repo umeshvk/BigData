@@ -3,7 +3,6 @@ package com.mvdb.etl.dao.impl;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -18,38 +17,19 @@ import org.apache.commons.io.FileUtils;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.support.JdbcDaoSupport;
 
-import com.mvdb.etl.BinaryGenericConsumer;
-import com.mvdb.etl.ColumnMetadata;
-import com.mvdb.etl.ConsumerException;
-import com.mvdb.etl.DataHeader;
-import com.mvdb.etl.DataRecord;
-import com.mvdb.etl.GenericConsumer;
-import com.mvdb.etl.GenericDataRecord;
-import com.mvdb.etl.Metadata;
+import com.mvdb.etl.consumer.BinaryGenericConsumer;
+import com.mvdb.etl.consumer.GenericConsumer;
 import com.mvdb.etl.dao.GenericDAO;
+import com.mvdb.etl.data.ColumnMetadata;
+import com.mvdb.etl.data.DataHeader;
+import com.mvdb.etl.data.DataRecord;
+import com.mvdb.etl.data.GenericDataRecord;
+import com.mvdb.etl.data.Metadata;
 
 public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
 {
 
-    private boolean writeMetadata(Metadata metadata, File snapshotDirectory)
-    {
-        try
-        {
-            String structFileName = "schema-" + metadata.getTableName() + ".dat";
-            snapshotDirectory.mkdirs();
-            File structFile = new File(snapshotDirectory, structFileName);
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(baos);
-            metadata.writeExternal(oos);
-            FileUtils.writeByteArrayToFile(structFile, baos.toByteArray());
-            return true;
-        } catch (Throwable t)
-        {
-            t.printStackTrace();
-            return false;
-        }
 
-    }
     
     private boolean writeDataHeader(DataHeader dataHeader, String objectName, File snapshotDirectory)
     {
@@ -60,7 +40,7 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
             File headerFile = new File(snapshotDirectory, headerFileName);
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
-            dataHeader.writeExternal(oos);
+            oos.writeObject(dataHeader);
             FileUtils.writeByteArrayToFile(headerFile, baos.toByteArray());
             return true;
         } catch (Throwable t)
@@ -112,6 +92,35 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
         writeMetadata(metadata, snapshotDirectory);
     }
 
+    private boolean writeMetadata(Metadata metadata, File snapshotDirectory)
+    {
+        try
+        {
+            String structFileName = "schema-" + metadata.getTableName() + ".dat";
+            snapshotDirectory.mkdirs();
+            File structFile = new File(snapshotDirectory, structFileName);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            oos.writeObject(metadata);   
+            oos.flush();            
+            FileUtils.writeByteArrayToFile(structFile, baos.toByteArray());
+            return true;
+        } catch (Throwable t)
+        {
+            t.printStackTrace();
+            return false;
+        }
+
+    }
+    
+    
+//  Metadata metadata2 = new Metadata();
+//  ByteArrayInputStream bis = new ByteArrayInputStream(baos.toByteArray());
+//  ObjectInputStream ois = new ObjectInputStream(bis);
+//  metadata2.readExternal(ois);
+//  
+//  boolean b1 = metadata.equals(metadata2);
+    
     @Override
     public DataHeader fetchAll(File snapshotDirectory, Timestamp modifiedAfter, String objectName)
     {
@@ -134,7 +143,6 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
                 }
 
                 DataRecord dataRecord = new GenericDataRecord(dataMap);
-
                 genericConsumer.consume(dataRecord);
                 dataHeader.incrementCount();
 
@@ -150,43 +158,89 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
     }
 
     @Override
-    public boolean scan(File file, int count)
+    public boolean scan(String objectName, File snapshotDirectory) throws IOException
     {
-
-        FileInputStream fis = null;
-        ObjectInputStream ois;
-
+        FileInputStream fis = null; 
+        ObjectInputStream ois = null; 
         try
         {
-            fis = new FileInputStream(file);
-            for (int i = 0; i < count; i++)
+            String dataFileName = "data-" + objectName + ".dat";
+            File dataFile = new File(snapshotDirectory, dataFileName);
+            fis = new FileInputStream(dataFile); 
+            if(fis.available() <= 0)
+            {
+                return true;
+            }
+            ois = new ObjectInputStream(fis);
+            while(fis.available() > 0)
             {
                 DataRecord dataRecord = new GenericDataRecord();
-                ois = new ObjectInputStream(fis);
-                dataRecord.readExternal(ois);
+                dataRecord = (GenericDataRecord) ois.readObject();                
+                System.out.println(dataRecord);
             }
-        } catch (FileNotFoundException e)
+            
+        } catch (Throwable t)
         {
-            throw new ConsumerException("", e);
-        } catch (ClassNotFoundException e)
-        {
-            throw new ConsumerException("", e);
-        } catch (IOException e)
-        {
-            throw new ConsumerException("", e);
+            t.printStackTrace();
+            return false;
+        } finally { 
+            if(fis != null)
+            {
+                fis.close();
+            }
+            if(ois != null)
+            {
+                ois.close();
+            }
         }
-
+        
+        
         return true;
 
     }
 
     @Override
-    public Metadata getMetadata(String objectName)
+    public Metadata getMetadata(String objectName, File snapshotDirectory)
     {
-        // TODO Auto-generated method stub
-        return null;
+        
+        try
+        {
+            return readMetadata(objectName, snapshotDirectory);
+        } catch (ClassNotFoundException e)
+        {            
+            e.printStackTrace();
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+        return null; 
     }
 
 
+    private Metadata readMetadata(String objectName, File snapshotDirectory) throws IOException, ClassNotFoundException
+    {
+        Metadata metadata = new Metadata();
+        FileInputStream fis = null; 
+        ObjectInputStream ois = null;
+        try
+        {
+            String structFileName = "schema-" + objectName + ".dat";
+            File structFile = new File(snapshotDirectory, structFileName);
+            fis = new FileInputStream(structFile);            
+            ois = new ObjectInputStream(fis);            
+            metadata = (Metadata) ois.readObject();
+            return metadata;
+        } finally { 
+            if(fis != null)
+            {
+                fis.close();
+            }
+            if(ois != null) 
+            {
+                ois.close();
+            }
+        }
+
+    }
 
 }

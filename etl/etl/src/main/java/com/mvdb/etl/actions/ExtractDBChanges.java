@@ -1,4 +1,4 @@
-package com.mvdb.etl;
+package com.mvdb.etl.actions;
 
 import java.io.File;
 import java.sql.Timestamp;
@@ -14,14 +14,15 @@ import org.apache.commons.cli.PosixParser;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
+import com.mvdb.etl.consumer.OrderJsonFileConsumer;
 import com.mvdb.etl.dao.ConfigurationDAO;
 import com.mvdb.etl.dao.GenericDAO;
 import com.mvdb.etl.dao.OrderDAO;
+import com.mvdb.etl.data.ColumnMetadata;
 import com.mvdb.etl.model.Configuration;
 
 public class ExtractDBChanges
 {
-    public static final String SEQUENCE_NAME = "com_mvdb_etl_dao_OrderDAO";
 
     public static void main(String[] args)
     {

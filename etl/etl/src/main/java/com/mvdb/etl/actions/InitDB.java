@@ -1,10 +1,11 @@
-package com.mvdb.etl;
+package com.mvdb.etl.actions;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import com.mvdb.etl.dao.ConfigurationDAO;
 import com.mvdb.etl.dao.OrderDAO;
+import com.mvdb.etl.util.db.SequenceNames;
 
 public class InitDB
 {

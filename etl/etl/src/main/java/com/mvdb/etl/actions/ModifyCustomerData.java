@@ -1,4 +1,4 @@
-package com.mvdb.etl;
+package com.mvdb.etl.actions;
 
 import java.util.Date;
 

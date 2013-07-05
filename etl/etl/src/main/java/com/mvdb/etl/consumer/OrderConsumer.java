@@ -1,4 +1,4 @@
-package com.mvdb.etl;
+package com.mvdb.etl.consumer;
 
 import java.util.ArrayList;
 import java.util.List;

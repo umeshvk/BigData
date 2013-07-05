@@ -15,12 +15,12 @@ import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.support.JdbcDaoSupport;
 
-import com.mvdb.etl.Consumer;
-import com.mvdb.etl.ColumnMetadata;
-import com.mvdb.etl.SequenceNames;
+import com.mvdb.etl.consumer.Consumer;
 import com.mvdb.etl.dao.OrderDAO;
+import com.mvdb.etl.data.ColumnMetadata;
 import com.mvdb.etl.model.Order;
 import com.mvdb.etl.model.OrderRowMapper;
+import com.mvdb.etl.util.db.SequenceNames;
 
 public class JdbcOrderDAO extends JdbcDaoSupport implements OrderDAO
 {

@@ -1,4 +1,4 @@
-package com.mvdb.etl;
+package com.mvdb.etl.data;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -63,5 +63,31 @@ public class GenericDataRecord implements DataRecord
         }
 
     }
+    
+    public String toString()
+    {
+        StringBuffer sb = new StringBuffer();
+        sb.append("{");
+        Iterator<String> keysIter = dataMap.keySet().iterator();
+        while(keysIter.hasNext())
+        {
+            sb.append("(");
+            String key = keysIter.next();        
+            Object value = dataMap.get(key);
+            
+            sb.append(key);
+            sb.append(" : ");
+            sb.append(value);
+            sb.append("), ");
+        }
+        int length = sb.length() -2; 
+        if(length> 0)
+        {
+            sb.setLength(length);
+        }
+        sb.append("}");
+        
+        return sb.toString();
+    }   
 
 }

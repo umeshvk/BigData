@@ -1,4 +1,4 @@
-package com.mvdb.etl;
+package com.mvdb.etl.data;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -16,6 +16,7 @@ public class ColumnMetadata implements Externalizable
     @Override
     public void readExternal(ObjectInput input) throws IOException, ClassNotFoundException
     {
+        
         columnName = (String)input.readObject();
         columnTypeName = (String)input.readObject();
         columnLabel = (String)input.readObject();
@@ -26,10 +27,12 @@ public class ColumnMetadata implements Externalizable
     @Override
     public void writeExternal(ObjectOutput output) throws IOException
     {
+        
         output.writeObject(columnName);
         output.writeObject(columnTypeName);
         output.writeObject(columnLabel);
         output.writeInt(columnType);
+        
     }
     
     public ColumnMetadata()
@@ -75,6 +78,51 @@ public class ColumnMetadata implements Externalizable
     public void setColumnType(int columnType)
     {
         this.columnType = columnType;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((columnLabel == null) ? 0 : columnLabel.hashCode());
+        result = prime * result + ((columnName == null) ? 0 : columnName.hashCode());
+        result = prime * result + columnType;
+        result = prime * result + ((columnTypeName == null) ? 0 : columnTypeName.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        ColumnMetadata other = (ColumnMetadata) obj;
+        if (columnLabel == null)
+        {
+            if (other.columnLabel != null)
+                return false;
+        } else if (!columnLabel.equals(other.columnLabel))
+            return false;
+        if (columnName == null)
+        {
+            if (other.columnName != null)
+                return false;
+        } else if (!columnName.equals(other.columnName))
+            return false;
+        if (columnType != other.columnType)
+            return false;
+        if (columnTypeName == null)
+        {
+            if (other.columnTypeName != null)
+                return false;
+        } else if (!columnTypeName.equals(other.columnTypeName))
+            return false;
+        return true;
     }
 
 

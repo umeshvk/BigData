@@ -1,4 +1,4 @@
-package com.mvdb.etl;
+package com.mvdb.etl.actions;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -15,6 +15,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 import com.mvdb.etl.dao.ConfigurationDAO;
 import com.mvdb.etl.dao.OrderDAO;
 import com.mvdb.etl.model.Order;
+import com.mvdb.etl.monitoring.TimedExecutor;
 import com.mvdb.etl.util.RandomUtil;
 
 public class InitCustomerData

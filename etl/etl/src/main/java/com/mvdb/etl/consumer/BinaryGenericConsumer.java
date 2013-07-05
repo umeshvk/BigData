@@ -1,21 +1,21 @@
-package com.mvdb.etl;
+package com.mvdb.etl.consumer;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 
-import org.springframework.dao.DataAccessException;
+import com.mvdb.etl.data.DataRecord;
 
 public class BinaryGenericConsumer implements GenericConsumer
 {
 
-    File             file;
-    FileOutputStream fos;
-    boolean          good;
-    boolean          done;
+    File                file;
+    FileOutputStream    fos;
+    ObjectOutputStream  oos;
+    boolean             good;
+    boolean             done;
 
     public BinaryGenericConsumer(File file)
     {
@@ -25,12 +25,17 @@ public class BinaryGenericConsumer implements GenericConsumer
         {
             file.getParentFile().mkdirs();
             this.fos = new FileOutputStream(file);
+            this.oos = new ObjectOutputStream(fos);
             good = true;
         } catch (FileNotFoundException e)
         {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
             good = false;
+            e.printStackTrace();
+            
+        } catch (IOException e)
+        {
+            good = false;
+            e.printStackTrace();
         }
     }
 
@@ -46,14 +51,10 @@ public class BinaryGenericConsumer implements GenericConsumer
             throw new ConsumerException("Check log for prior error. Consumer unusable for output file:"
                     + file.getAbsolutePath());
         }
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ObjectOutputStream oos;
+
         try
-        {
-            oos = new ObjectOutputStream(baos);
-            dataRecord.writeExternal(oos);
-            fos.write(baos.toByteArray());
-            // FileUtils.writeByteArrayToFile(file, baos.toByteArray(), true);
+        {            
+            oos.writeObject(dataRecord);
             return true;
         } catch (IOException e)
         {
@@ -69,17 +70,23 @@ public class BinaryGenericConsumer implements GenericConsumer
     {
         try
         {
+            if (oos != null)
+            {
+                oos.flush();
+                oos.close();               
+            }
+            
             if (fos != null)
             {
                 fos.flush();
-                fos.close();
-                return true;
+                fos.close();               
             }
+            
+            return true;
         } catch (IOException ioe)
         {
             throw new ConsumerException("Unable to flush for output file:" + file.getAbsolutePath(), ioe);
         }
-        return true;
     }
 
 }

@@ -1,4 +1,6 @@
-package com.mvdb.etl;
+package com.mvdb.etl.consumer;
+
+import com.mvdb.etl.data.DataRecord;
 
 
 

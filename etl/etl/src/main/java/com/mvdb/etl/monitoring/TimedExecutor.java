@@ -1,4 +1,4 @@
-package com.mvdb.etl;
+package com.mvdb.etl.monitoring;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;

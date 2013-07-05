@@ -1,4 +1,4 @@
-package com.mvdb.etl;
+package com.mvdb.etl.consumer;
 
 public class ConsumerException extends RuntimeException
 {

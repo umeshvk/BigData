@@ -1,4 +1,4 @@
-package com.mvdb.etl;
+package com.mvdb.etl.consumer;
 
 import java.io.File;
 import java.io.IOException;

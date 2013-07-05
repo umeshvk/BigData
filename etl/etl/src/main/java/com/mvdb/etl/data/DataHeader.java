@@ -1,4 +1,4 @@
-package com.mvdb.etl;
+package com.mvdb.etl.data;
 
 import java.io.Externalizable;
 import java.io.IOException;

@@ -4,8 +4,8 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 
-import com.mvdb.etl.Consumer;
-import com.mvdb.etl.ColumnMetadata;
+import com.mvdb.etl.consumer.Consumer;
+import com.mvdb.etl.data.ColumnMetadata;
 import com.mvdb.etl.model.Order;
 
 public interface OrderDAO
