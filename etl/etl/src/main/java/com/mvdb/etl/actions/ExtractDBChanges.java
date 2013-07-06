@@ -64,7 +64,7 @@ public class ExtractDBChanges
         //write file schema-orders.dat in snapshotDirectory
         genericDAO.fetchMetadata("orders", snapshotDirectory);
         //writes files: header-orders.dat, data-orders.dat in snapshotDirectory
-        genericDAO.fetchAll(snapshotDirectory, new Timestamp(lastRefreshTime), "orders");
+        genericDAO.fetchAll2(snapshotDirectory, new Timestamp(lastRefreshTime), "orders");
         
         //orderDAO.findAll(new Timestamp(lastRefreshTime), orderJsonFileConsumer);
         Configuration updateRefreshTimeConf = new Configuration(customerName, "last-refresh-time",

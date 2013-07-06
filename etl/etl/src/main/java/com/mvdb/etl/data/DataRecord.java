@@ -6,3 +6,4 @@ public interface DataRecord extends Externalizable
 {
 
 }
+

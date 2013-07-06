@@ -7,8 +7,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class GenericDataRecord implements DataRecord
 {
+    private static Logger logger = LoggerFactory.getLogger(GenericDataRecord.class);
+
     Map<String, Object> dataMap;
 
     public GenericDataRecord()
@@ -88,6 +93,10 @@ public class GenericDataRecord implements DataRecord
         sb.append("}");
         
         return sb.toString();
-    }   
+    }
+
+
+
+  
 
 }

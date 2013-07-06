@@ -15,5 +15,7 @@ public interface GenericDAO
     DataHeader fetchAll(File snapshotDirectory, Timestamp modifiedAfter, String objectName);
     //boolean scan(File file, int count);
     boolean scan(String objectName, File snapshotDirectory) throws IOException;
+    boolean scan2(String objectName, File snapshotDirectory) throws IOException;
     Metadata getMetadata(String objectName, File snapshotDirectory);
+    DataHeader fetchAll2(File snapshotDirectory, Timestamp modifiedAfter, String objectName);
 }

@@ -66,7 +66,7 @@ public class ScanDBChanges
         //write file schema-orders.dat in snapshotDirectory
         Metadata metadata= genericDAO.getMetadata("orders", snapshotDirectory);
         //writes files: header-orders.dat, data-orders.dat in snapshotDirectory
-        genericDAO.scan("orders", snapshotDirectory);
+        genericDAO.scan2("orders", snapshotDirectory);
         
         
 
