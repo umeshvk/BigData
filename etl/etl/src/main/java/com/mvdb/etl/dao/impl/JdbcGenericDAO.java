@@ -20,14 +20,13 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.IOUtils;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.SequenceFile;
+import org.apache.hadoop.io.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.support.JdbcDaoSupport;
 
-import com.mvdb.etl.consumer.BinaryGenericConsumer;
 import com.mvdb.etl.consumer.GenericConsumer;
 import com.mvdb.etl.consumer.SequenceFileConsumer;
 import com.mvdb.etl.dao.GenericDAO;
@@ -40,7 +39,7 @@ import com.mvdb.etl.data.Metadata;
 public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
 {
     private static Logger logger = LoggerFactory.getLogger(JdbcGenericDAO.class);
-
+    private GlobalMvdbKeyMaker globalMvdbKeyMaker = new GlobalMvdbKeyMaker();
     private boolean writeDataHeader(DataHeader dataHeader, String objectName, File snapshotDirectory)
     {
         try
@@ -87,12 +86,6 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
                     columnMetadata.setColumnTypeName(rsm.getColumnTypeName(column));
 
                     metaDataMap.put(rsm.getColumnName(column), columnMetadata);
-                    // if (column == 1)
-                    // {
-                    // metadata.setTableName(rsm.getTableName(column));
-                    // metadata.setSchemaName(rsm.getSchemaName(column));
-                    // }
-
                 }
 
             }
@@ -122,15 +115,9 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
 
     }
 
-    // Metadata metadata2 = new Metadata();
-    // ByteArrayInputStream bis = new ByteArrayInputStream(baos.toByteArray());
-    // ObjectInputStream ois = new ObjectInputStream(bis);
-    // metadata2.readExternal(ois);
-    //
-    // boolean b1 = metadata.equals(metadata2);
 
     @Override
-    public DataHeader fetchAll2(File snapshotDirectory, Timestamp modifiedAfter, String objectName)
+    public DataHeader fetchAll2(File snapshotDirectory, Timestamp modifiedAfter, String objectName, final String keyName, final String updateTimeColumnName)
     {
         final GenericConsumer genericConsumer = new SequenceFileConsumer(new File(snapshotDirectory, "data-"
                 + objectName + ".dat"));
@@ -151,7 +138,8 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
                     dataMap.put(rsm.getColumnName(column), row.getObject(rsm.getColumnLabel(column)));
                 }
 
-                DataRecord dataRecord = new GenericDataRecord(dataMap);
+                DataRecord dataRecord = new GenericDataRecord(dataMap, keyName , globalMvdbKeyMaker, 
+                                updateTimeColumnName, new GlobalMvdbUpdateTimeMaker());
                 genericConsumer.consume(dataRecord);
                 dataHeader.incrementCount();
 
@@ -164,41 +152,7 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
         return dataHeader;
     }
 
-    @Override
-    public DataHeader fetchAll(File snapshotDirectory, Timestamp modifiedAfter, String objectName)
-    {
-        final GenericConsumer genericConsumer = new BinaryGenericConsumer(new File(snapshotDirectory, "data-"
-                + objectName + ".dat"));
-        final DataHeader dataHeader = new DataHeader();
 
-        String sql = "SELECT * FROM " + objectName + " o where o.update_time >= ?";
-
-        getJdbcTemplate().query(sql, new Object[] { modifiedAfter }, new RowCallbackHandler() {
-
-            @Override
-            public void processRow(ResultSet row) throws SQLException
-            {
-                final Map<String, Object> dataMap = new HashMap<String, Object>();
-                ResultSetMetaData rsm = row.getMetaData();
-                int columnCount = rsm.getColumnCount();
-                for (int column = 1; column < (columnCount + 1); column++)
-                {
-                    dataMap.put(rsm.getColumnName(column), row.getObject(rsm.getColumnLabel(column)));
-                }
-
-                DataRecord dataRecord = new GenericDataRecord(dataMap);
-                genericConsumer.consume(dataRecord);
-                dataHeader.incrementCount();
-
-            }
-        });
-
-        genericConsumer.flushAndClose();
-
-        writeDataHeader(dataHeader, objectName, snapshotDirectory);
-        return dataHeader;
-
-    }
     
     @Override
     public boolean scan2(String objectName, File snapshotDirectory)
@@ -216,9 +170,8 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
             fs = FileSystem.get(conf);
             SequenceFile.Reader reader = new SequenceFile.Reader(fs, path, conf);
 
-            IntWritable key = new IntWritable(); // this could be the wrong type
-            BytesWritable value = new BytesWritable(); // also could be wrong
-
+            Text key = new Text(); 
+            BytesWritable value = new BytesWritable(); 
             while (reader.next(key, value))
             {
                 byte[] bytes = value.getBytes();
@@ -242,64 +195,7 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
         return true;
     }
 
-    @Override
-    public boolean scan(String objectName, File snapshotDirectory) throws IOException
-    {
-        FileInputStream fis = null;
-        ObjectInputStream ois = null;
-        try
-        {
-            String dataFileName = "data-" + objectName + ".dat";
-            File dataFile = new File(snapshotDirectory, dataFileName);
-            fis = new FileInputStream(dataFile);
-            if (fis.available() <= 0)
-            {
-                return true;
-            }
-            ois = new ObjectInputStream(fis);
-            while (fis.available() > 0)
-            {
-                DataRecord dataRecord = new GenericDataRecord();
-                dataRecord = (GenericDataRecord) ois.readObject();
-                System.out.println(dataRecord);
-            }
 
-        } catch (Throwable t)
-        {
-            t.printStackTrace();
-            return false;
-        } finally
-        {
-            if (fis != null)
-            {
-                fis.close();
-            }
-            if (ois != null)
-            {
-                ois.close();
-            }
-        }
-
-        return true;
-
-    }
-
-    @Override
-    public Metadata getMetadata(String objectName, File snapshotDirectory)
-    {
-
-        try
-        {
-            return readMetadata(objectName, snapshotDirectory);
-        } catch (ClassNotFoundException e)
-        {
-            e.printStackTrace();
-        } catch (IOException e)
-        {
-            e.printStackTrace();
-        }
-        return null;
-    }
 
     private Metadata readMetadata(String objectName, File snapshotDirectory) throws IOException, ClassNotFoundException
     {
@@ -328,4 +224,106 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
 
     }
 
+    @Override
+    public Metadata getMetadata(String objectName, File snapshotDirectory)
+    {
+
+        try
+        {
+            return readMetadata(objectName, snapshotDirectory);
+        } catch (ClassNotFoundException e)
+        {
+            e.printStackTrace();
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+        return null;
+    }
+    
+
 }
+
+
+/*
+@Override
+public boolean scanOld(String objectName, File snapshotDirectory) throws IOException
+{
+    FileInputStream fis = null;
+    ObjectInputStream ois = null;
+    try
+    {
+        String dataFileName = "data-" + objectName + ".dat";
+        File dataFile = new File(snapshotDirectory, dataFileName);
+        fis = new FileInputStream(dataFile);
+        if (fis.available() <= 0)
+        {
+            return true;
+        }
+        ois = new ObjectInputStream(fis);
+        while (fis.available() > 0)
+        {
+            DataRecord dataRecord = new GenericDataRecord();
+            dataRecord = (GenericDataRecord) ois.readObject();
+            System.out.println(dataRecord);
+        }
+
+    } catch (Throwable t)
+    {
+        t.printStackTrace();
+        return false;
+    } finally
+    {
+        if (fis != null)
+        {
+            fis.close();
+        }
+        if (ois != null)
+        {
+            ois.close();
+        }
+    }
+
+    return true;
+
+}
+
+*/
+
+/*
+@Override
+public DataHeader fetchAllOld(File snapshotDirectory, Timestamp modifiedAfter, String objectName)
+{
+    final GenericConsumer genericConsumer = new BinaryGenericConsumer(new File(snapshotDirectory, "data-"
+            + objectName + ".dat"));
+    final DataHeader dataHeader = new DataHeader();
+
+    String sql = "SELECT * FROM " + objectName + " o where o.update_time >= ?";
+
+    getJdbcTemplate().query(sql, new Object[] { modifiedAfter }, new RowCallbackHandler() {
+
+        @Override
+        public void processRow(ResultSet row) throws SQLException
+        {
+            final Map<String, Object> dataMap = new HashMap<String, Object>();
+            ResultSetMetaData rsm = row.getMetaData();
+            int columnCount = rsm.getColumnCount();
+            for (int column = 1; column < (columnCount + 1); column++)
+            {
+                dataMap.put(rsm.getColumnName(column), row.getObject(rsm.getColumnLabel(column)));
+            }
+
+            DataRecord dataRecord = new GenericDataRecord(dataMap);
+            genericConsumer.consume(dataRecord);
+            dataHeader.incrementCount();
+
+        }
+    });
+
+    genericConsumer.flushAndClose();
+
+    writeDataHeader(dataHeader, objectName, snapshotDirectory);
+    return dataHeader;
+
+}
+*/

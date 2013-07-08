@@ -5,9 +5,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.util.List;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -15,10 +13,10 @@ import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.SequenceFile;
+import org.apache.hadoop.io.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.mvdb.etl.dao.impl.JdbcGenericDAO;
 import com.mvdb.etl.data.DataRecord;
 
 public class SequenceFileConsumer implements GenericConsumer
@@ -44,7 +42,7 @@ public class SequenceFileConsumer implements GenericConsumer
             if (conf != null)
             {
                 Path path = new Path(dataFile.getAbsolutePath());
-                writer = SequenceFile.createWriter(fs, conf, path, IntWritable.class, BytesWritable.class);
+                writer = SequenceFile.createWriter(fs, conf, path, Text.class, BytesWritable.class);
             }
             good = true;
         } catch (IOException e)
@@ -77,7 +75,7 @@ public class SequenceFileConsumer implements GenericConsumer
             oos.writeObject(dataRecord);
             oos.flush();
             BytesWritable value = new BytesWritable(bos.toByteArray());
-            IntWritable key = new IntWritable(1);
+            Text key = new Text(dataRecord.getMvdbKeyValue());
             writer.append(key, value);
             return true;
         } catch (IOException e)

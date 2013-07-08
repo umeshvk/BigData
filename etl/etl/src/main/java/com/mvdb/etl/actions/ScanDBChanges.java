@@ -10,6 +10,8 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -20,10 +22,15 @@ import com.mvdb.etl.model.Configuration;
 
 public class ScanDBChanges
 {
+    private static Logger logger = LoggerFactory.getLogger(ScanDBChanges.class);
 
     public static void main(String[] args) throws IOException
     {
-
+        logger.error("error");
+        logger.warn("warning");
+        logger.info("info");
+        logger.debug("debug");
+        logger.trace("trace");
         
         String customerName = null;
         String snapshotDir = null;

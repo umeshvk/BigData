@@ -10,6 +10,8 @@ import java.util.Map;
 
 public class Metadata implements Externalizable 
 {
+    private static final long serialVersionUID = 1L;
+
     int count;
     String schemaName; 
     String tableName;

@@ -10,6 +10,8 @@ import java.util.Map;
 
 public class DataHeader implements Externalizable 
 {
+    private static final long serialVersionUID = 1L;
+
     int count;
     
     public DataHeader()

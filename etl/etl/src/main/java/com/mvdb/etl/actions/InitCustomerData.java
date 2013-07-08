@@ -9,6 +9,8 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -20,9 +22,17 @@ import com.mvdb.etl.util.RandomUtil;
 
 public class InitCustomerData
 {
+    private static Logger logger = LoggerFactory.getLogger(InitCustomerData.class);
+    
     public static void main(String[] args)
     {
 
+        logger.error("error");
+        logger.warn("warning");
+        logger.info("info");
+        logger.debug("debug");
+        logger.trace("trace");
+        
         String customerName= null; 
         int batchCountF = 0;
         int batchSizeF = 0;
@@ -74,10 +84,12 @@ public class InitCustomerData
 
     private static void initConfiguration(ConfigurationDAO configurationDAO, String customerName)
     {
+        String schemaDescription = "{ ''root'' : [{''table'' : ''orders'', ''keyColumn'' : ''order_id'', ''updateTimeColumn'' : ''update_time''}]}";
         String[] sqlArray = new String[] {
                 "INSERT INTO configuration (customer, name, value) VALUES  ('" + customerName + "', 'last-refresh-time', '0');",
                 "INSERT INTO configuration (customer, name, value) VALUES  ('" + customerName + "', 'extraction-lock', '0');",
-                "INSERT INTO configuration (customer, name, value) VALUES  ('" + customerName + "', 'load-lock', '0');"
+                "INSERT INTO configuration (customer, name, value) VALUES  ('" + customerName + "', 'load-lock', '0');", 
+                "INSERT INTO configuration (customer, name, value) VALUES  ('" + customerName + "', 'schema-description', '" + schemaDescription + "');"
                 };
         configurationDAO.executeSQl(sqlArray);        
     }

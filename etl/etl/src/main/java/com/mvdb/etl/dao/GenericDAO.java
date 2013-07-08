@@ -12,10 +12,12 @@ import com.mvdb.etl.data.Metadata;
 public interface GenericDAO
 {
     void fetchMetadata(String objectName, File snapshotDirectory);
-    DataHeader fetchAll(File snapshotDirectory, Timestamp modifiedAfter, String objectName);
+    //DataHeader fetchAllOld(File snapshotDirectory, Timestamp modifiedAfter, String objectName);
     //boolean scan(File file, int count);
-    boolean scan(String objectName, File snapshotDirectory) throws IOException;
+    //boolean scanOld(String objectName, File snapshotDirectory) throws IOException;
     boolean scan2(String objectName, File snapshotDirectory) throws IOException;
     Metadata getMetadata(String objectName, File snapshotDirectory);
-    DataHeader fetchAll2(File snapshotDirectory, Timestamp modifiedAfter, String objectName);
+    //DataHeader fetchAll2(File snapshotDirectory, Timestamp modifiedAfter, String objectName, String keyName);
+    DataHeader fetchAll2(File snapshotDirectory, Timestamp modifiedAfter, String objectName, String keyName,
+            String updateTimeColumnName);
 }

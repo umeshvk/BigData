@@ -1,4 +1,4 @@
-package org.apache.hadoop.examples;
+package com.mvdb.platform.scratch.action;
 
 import java.io.IOException;
 import java.util.StringTokenizer;

@@ -3,6 +3,7 @@ package com.mvdb.etl.data;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -12,24 +13,78 @@ import org.slf4j.LoggerFactory;
 
 public class GenericDataRecord implements DataRecord
 {
+    private static final long serialVersionUID = 1L;
+
     private static Logger logger = LoggerFactory.getLogger(GenericDataRecord.class);
+    //Change this to "id". When creating the data feed always add a column called id to contain the key. 
+    private static String ID = "mvdb_id"; 
+    private static String MVDB_UPDATE_TIME_COLUMN = "mvdb_update_time"; 
 
     Map<String, Object> dataMap;
-
-    public GenericDataRecord()
-    {
-        dataMap = new HashMap<String, Object>();
-    }
-
-    public GenericDataRecord(Map<String, Object> dataMap)
+    String mvdbKeyValue; 
+    Date mvdbUpdateTime;
+   
+    public GenericDataRecord(Map<String, Object> dataMap, String originalKeyName, MvdbKeyMaker mvdbKeyMaker, String originalUpdateTimeColumn, MvdbUpdateTimeMaker mvdbUpdateTimeMaker)
     {
         if (dataMap == null)
         {
             dataMap = new HashMap<String, Object>();
         }
         this.dataMap = dataMap;
+        Object originalKeyValue  = dataMap.get(originalKeyName);
+        this.mvdbKeyValue = mvdbKeyMaker.makeKey(originalKeyValue);
+        dataMap.put(ID, mvdbKeyValue);
+        Object originalUpdateTimeValue  = dataMap.get(originalUpdateTimeColumn);
+        this.mvdbUpdateTime = mvdbUpdateTimeMaker.makeMvdbUpdateTime(originalUpdateTimeValue);
+        dataMap.put(MVDB_UPDATE_TIME_COLUMN, mvdbUpdateTime);
 
     }
+    
+
+    @Override
+    public int hashCode()
+    {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((dataMap == null) ? 0 : dataMap.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        GenericDataRecord other = (GenericDataRecord) obj;
+        if (dataMap == null)
+        {
+            if (other.dataMap != null)
+                return false;
+        } else if (!dataMap.equals(other.dataMap))
+            return false;
+        return true;
+    }
+
+    public GenericDataRecord()
+    {
+        dataMap = new HashMap<String, Object>();
+    }
+
+    public Object getKeyValue()
+    {
+        return dataMap.get(ID);
+    }
+    
+    public long getTimestampLongValue()
+    {
+        return ((Date)dataMap.get(MVDB_UPDATE_TIME_COLUMN)).getTime();
+    }
+    
+
 
     public Map<String, Object> getDataMap()
     {
@@ -44,6 +99,8 @@ public class GenericDataRecord implements DataRecord
     @Override
     public void readExternal(ObjectInput input) throws IOException, ClassNotFoundException
     {
+        this.mvdbKeyValue = (String)input.readObject();
+        this.mvdbUpdateTime = (Date)input.readObject();
         int size = input.readInt();
         dataMap = new HashMap<String, Object>();
         for (int i = 0; i < size; i++)
@@ -57,6 +114,8 @@ public class GenericDataRecord implements DataRecord
     @Override
     public void writeExternal(ObjectOutput output) throws IOException
     {
+        output.writeObject(mvdbKeyValue);
+        output.writeObject(mvdbUpdateTime);
         output.writeInt(dataMap.size());
         Iterator<String> keysIter = dataMap.keySet().iterator();
         while (keysIter.hasNext())
@@ -73,6 +132,14 @@ public class GenericDataRecord implements DataRecord
     {
         StringBuffer sb = new StringBuffer();
         sb.append("{");
+        sb.append("mvdbKeyValue");
+        sb.append(" : ");
+        sb.append(mvdbKeyValue);
+        sb.append(", ");
+        sb.append("mvdbUpdateTime");
+        sb.append(" : ");
+        sb.append(mvdbUpdateTime);
+        sb.append(", ");
         Iterator<String> keysIter = dataMap.keySet().iterator();
         while(keysIter.hasNext())
         {
@@ -108,8 +175,23 @@ public class GenericDataRecord implements DataRecord
         }
     }
 
+    @Override
+    public int compareTo(DataRecord dataRecord)
+    {
+        Long local = new Long(this.getTimestampLongValue());
+        Long external = new Long(dataRecord.getTimestampLongValue());        
+        return local.compareTo(external);
+    }
+    
+    public String getMvdbKeyValue()
+    {
+        return mvdbKeyValue;
+    }
 
+    public void setMvdbKeyValue(String mvdbKeyValue)
+    {
+        this.mvdbKeyValue = mvdbKeyValue;
+    }
 
-  
 
 }

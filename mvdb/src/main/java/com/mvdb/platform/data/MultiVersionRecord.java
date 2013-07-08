@@ -1,4 +1,4 @@
-package com.mvdb.platform;
+package com.mvdb.platform.data;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -13,8 +13,23 @@ import com.mvdb.etl.data.GenericDataRecord;
 
 public class MultiVersionRecord implements Externalizable
 {
+    private static final long serialVersionUID = 1L;
     List<GenericDataRecord> versionList;
       
+    public String toString()
+    {
+        StringBuffer sb = new StringBuffer();
+        sb.append("[");
+        for(GenericDataRecord gdr : versionList)
+        {
+            sb.append(gdr);
+        }
+        sb.append("]");
+        
+        return sb.toString();
+        
+    }
+    
     public MultiVersionRecord()
     {
         versionList = new ArrayList<GenericDataRecord>();               
