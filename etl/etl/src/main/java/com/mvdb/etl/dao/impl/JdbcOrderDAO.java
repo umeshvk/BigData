@@ -200,6 +200,7 @@ public class JdbcOrderDAO extends JdbcDaoSupport implements OrderDAO
 
         return total;
     }
+        
 
     @Override
     public long findMaxId()
@@ -243,5 +244,7 @@ public class JdbcOrderDAO extends JdbcDaoSupport implements OrderDAO
         getJdbcTemplate().update("update orders set note = ?, sale_code = ?, update_time = ? where order_id = ?",
                 new Object[] { order.getNote(), order.getSaleCode(), new java.sql.Timestamp(tm), order.getOrderId() });
     }
+
+
 
 }

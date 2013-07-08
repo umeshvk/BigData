@@ -25,6 +25,8 @@ public interface OrderDAO
     public void findAll(Timestamp modifiedAfter, Consumer consumer);
     
     public int findTotalOrders();
+    
+    //public int findTotalOrders(String customer);
 
     public long findMaxId();
 

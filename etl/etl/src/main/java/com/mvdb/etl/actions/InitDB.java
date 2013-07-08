@@ -1,17 +1,31 @@
 package com.mvdb.etl.actions;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
+import com.mvdb.etl.App;
 import com.mvdb.etl.dao.ConfigurationDAO;
 import com.mvdb.etl.dao.OrderDAO;
 import com.mvdb.etl.util.db.SequenceNames;
 
 public class InitDB
 {
+    
+    private static Logger logger = LoggerFactory.getLogger(InitDB.class);
+
+
+        
+
+        
     public static void main(String[] args)
     {
-
+        logger.error("error");
+        logger.warn("warning");
+        logger.info("info");
+        logger.debug("debug");
+        logger.trace("trace");
         ApplicationContext context = new ClassPathXmlApplicationContext("Spring-Module.xml");
 
         createConfiguration(context);

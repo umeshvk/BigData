@@ -94,6 +94,19 @@ public class GenericDataRecord implements DataRecord
         
         return sb.toString();
     }
+    
+    public void removeIdenticalColumn(String columnName, Object latestValue)
+    {
+        Object lastValue = dataMap.get(columnName);
+        if(lastValue == null)
+        {
+            return; 
+        }
+        if(lastValue.equals(latestValue))
+        {
+            dataMap.remove(columnName);
+        }
+    }
 
 
 
