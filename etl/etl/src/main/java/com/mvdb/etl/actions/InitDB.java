@@ -1,26 +1,41 @@
 package com.mvdb.etl.actions;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.Properties;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-import com.mvdb.etl.App;
 import com.mvdb.etl.dao.ConfigurationDAO;
 import com.mvdb.etl.dao.OrderDAO;
 import com.mvdb.etl.util.db.SequenceNames;
 
-public class InitDB
+public class InitDB implements IAction
 {
     
     private static Logger logger = LoggerFactory.getLogger(InitDB.class);
 
 
-        
 
+    
         
     public static void main(String[] args)
     {
+        
+        ActionUtils.assertEnvironmentSetupOk();
+        ActionUtils.assertFileExists("~/.mvdb", "~/.mvdb missing. Existing.");
+        ActionUtils.assertFileExists("~/.mvdb/status.init.sh.complete", "init.sh not executed yet. Exiting");
+        ActionUtils.assertFileDoesNotExist("~/.mvdb/status.InitDB.complete", "initDB already done. Start with init.sh if required. Exiting");
+        
+        ActionUtils.setUpInitFileProperty();
+        
+        
+        ActionUtils.createMarkerFile("~/.mvdb/status.InitDB.start");
         logger.error("error");
         logger.warn("warning");
         logger.info("info");
@@ -31,6 +46,7 @@ public class InitDB
         createConfiguration(context);
         createOrder(context);
 
+        ActionUtils.createMarkerFile("~/.mvdb/status.InitDB.complete");
     }
 
     private static void createOrder(ApplicationContext context)
@@ -51,16 +67,30 @@ public class InitDB
         
     }
 
+
+    
     private static void createConfiguration(ApplicationContext context)
     {
         final ConfigurationDAO configurationDAO = (ConfigurationDAO) context.getBean("configurationDAO");
-
+        Properties topProps = ActionUtils.getTopProperties();
+        if(topProps == null)
+        {
+            throw new RuntimeException("Unable to find top properties.");
+        }
+        String globalDataRoot = topProps.getProperty(Globals.DataRootKey);
+        String hdfsHome = topProps.getProperty(Globals.HdfsHomeKey);
         String[] commands = {
                 "DROP TABLE IF EXISTS configuration;",
-                "CREATE TABLE  configuration (" + " customer varchar(128)  NOT NULL, " + " name varchar(128)  NOT NULL,"
-                        + " value varchar(128)  NOT NULL, " + "UNIQUE (customer, name, value)); ", 
-                "INSERT INTO configuration (customer, name, value) VALUES  ('global', 'data_root', '/home/umesh/data/etl');", 
-                 "COMMIT;" };
+                "CREATE TABLE  configuration (" 
+                        + " customer varchar(128)  NOT NULL, " 
+                        + " name varchar(128)  NOT NULL,"
+                        + " value varchar(128)  NOT NULL, " 
+                        + " category varchar(32)  NOT NULL, " 
+                        + " note varchar(512)  NOT NULL, " 
+                        + "UNIQUE (customer, name, value, category)); ", 
+                "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('global', '" + Globals.DataRootKey + "', '" + globalDataRoot + "', '', '');", 
+                "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('global', '" + Globals.HdfsHomeKey + "', '" + hdfsHome + "', '', '');",
+                "COMMIT;" };
 
         
         configurationDAO.executeSQl(commands);

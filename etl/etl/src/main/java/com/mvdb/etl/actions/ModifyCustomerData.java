@@ -11,12 +11,21 @@ import com.mvdb.etl.dao.OrderDAO;
 import com.mvdb.etl.model.Order;
 import com.mvdb.etl.util.RandomUtil;
 
-public class ModifyCustomerData
+public class ModifyCustomerData  implements IAction
 {
     private static Logger logger = LoggerFactory.getLogger(ModifyCustomerData.class);
 
     public static void main(String[] args)
     {
+        
+        ActionUtils.assertEnvironmentSetupOk();
+        ActionUtils.assertFileExists("~/.mvdb", "~/.mvdb missing. Existing.");
+        ActionUtils.assertFileExists("~/.mvdb/status.InitCustomerData.complete", "300init-customer-data.sh not executed yet. Exiting");
+        //This check is not required as data can be modified any number of times
+        //ActionUtils.assertFileDoesNotExist("~/.mvdb/status.ModifyCustomerData.complete", "ModifyCustomerData already done. Start with 100init.sh if required. Exiting");
+        ActionUtils.setUpInitFileProperty();
+        ActionUtils.createMarkerFile("~/.mvdb/status.ModifyCustomerData.start", true);
+        
         logger.error("error");
         logger.warn("warning");
         logger.info("info");
@@ -47,6 +56,6 @@ public class ModifyCustomerData
 
         }
         System.out.println("Modified " + modifyCount + " orders");
-
+        ActionUtils.createMarkerFile("~/.mvdb/status.ModifyCustomerData.complete", true);
     }
 }

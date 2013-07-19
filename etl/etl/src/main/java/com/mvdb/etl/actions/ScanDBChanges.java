@@ -20,7 +20,7 @@ import com.mvdb.etl.dao.GenericDAO;
 import com.mvdb.etl.data.Metadata;
 import com.mvdb.etl.model.Configuration;
 
-public class ScanDBChanges
+public class ScanDBChanges  implements IAction
 {
     private static Logger logger = LoggerFactory.getLogger(ScanDBChanges.class);
 
@@ -83,7 +83,7 @@ public class ScanDBChanges
 
     private static File getSnapshotDirectory(ConfigurationDAO configurationDAO, String customerName, String snapshotDir)
     {
-        Configuration dataRootDirConfig = configurationDAO.find("global", "data_root");
+        Configuration dataRootDirConfig = configurationDAO.find(Constants.GLOBAL_CUSTOMER, Constants.GLOBAL_CUSTOMER_DATA_ROOT);
         String dataRootDir = dataRootDirConfig.getValue();
         File customerDir = new File(dataRootDir, customerName);
         File snapshotDirectory = new File(customerDir, snapshotDir);

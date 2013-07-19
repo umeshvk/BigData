@@ -20,13 +20,18 @@ import com.mvdb.etl.model.Order;
 import com.mvdb.etl.monitoring.TimedExecutor;
 import com.mvdb.etl.util.RandomUtil;
 
-public class InitCustomerData
+public class InitCustomerData  implements IAction
 {
     private static Logger logger = LoggerFactory.getLogger(InitCustomerData.class);
     
     public static void main(String[] args)
     {
-
+        ActionUtils.assertEnvironmentSetupOk();
+        ActionUtils.assertFileExists("~/.mvdb", "~/.mvdb missing. Existing.");
+        ActionUtils.assertFileExists("~/.mvdb/status.InitDB.complete", "200initdb.sh not executed yet. Exiting");
+        ActionUtils.assertFileDoesNotExist("~/.mvdb/status.InitCustomerData.complete", "InitCustomerData already done. Start with 100init.sh if required. Exiting");
+        ActionUtils.setUpInitFileProperty();
+        ActionUtils.createMarkerFile("~/.mvdb/status.InitCustomerData.start");
         logger.error("error");
         logger.warn("warning");
         logger.info("info");
@@ -79,6 +84,8 @@ public class InitCustomerData
 
         long max = orderDAO.findMaxId();
         System.out.println("maxid : " + max);
+        
+        ActionUtils.createMarkerFile("~/.mvdb/status.InitCustomerData.complete");
 
     }
 
@@ -86,10 +93,10 @@ public class InitCustomerData
     {
         String schemaDescription = "{ ''root'' : [{''table'' : ''orders'', ''keyColumn'' : ''order_id'', ''updateTimeColumn'' : ''update_time''}]}";
         String[] sqlArray = new String[] {
-                "INSERT INTO configuration (customer, name, value) VALUES  ('" + customerName + "', 'last-refresh-time', '0');",
-                "INSERT INTO configuration (customer, name, value) VALUES  ('" + customerName + "', 'extraction-lock', '0');",
-                "INSERT INTO configuration (customer, name, value) VALUES  ('" + customerName + "', 'load-lock', '0');", 
-                "INSERT INTO configuration (customer, name, value) VALUES  ('" + customerName + "', 'schema-description', '" + schemaDescription + "');"
+                "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'last-refresh-time', '0', '', '');",
+                "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'extraction-lock', '0', '', '');",
+                "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'load-lock', '0', '', '');", 
+                "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'schema-description', '" + schemaDescription + "', '', '');"
                 };
         configurationDAO.executeSQl(sqlArray);        
     }
@@ -125,21 +132,7 @@ public class InitCustomerData
         
     }
 
-    private static void createConfiguration(ApplicationContext context)
-    {
-        final ConfigurationDAO configurationDAO = (ConfigurationDAO) context.getBean("configurationDAO");
 
-        String[] commands = {
-                "DROP TABLE IF EXISTS configuration;",
-                "CREATE TABLE  configuration (" + " customer varchar(128)  NOT NULL, " + " name varchar(128)  NOT NULL,"
-                        + " name varchar(128)  NOT NULL" + " ); ", 
-                "INSERT INTO configuration (customer, name, value) VALUES  ('global', 'data_root', '/home/umesh/data/etl');", 
-                 "COMMIT;" };
-
-        
-        configurationDAO.executeSQl(commands);
-        
-    }
 
     public static Options constructPosixOptions()
     {
@@ -151,34 +144,6 @@ public class InitCustomerData
     }
 }
 
-// Order order1 = new Order(orderDAO.getNextSequenceValue(),
-// RandomUtil.getRandomString(5),RandomUtil.getRandomInt(), new
-// Date(tm-10000000000L), new Date(tm-5000000000L));
-// Order order3 = new Order(orderDAO.getNextSequenceValue(),
-// RandomUtil.getRandomString(5),RandomUtil.getRandomInt(), new
-// Date(tm-20000000000L), new Date(tm-4000000000L));
-// Order order2 = new Order(orderDAO.getNextSequenceValue(),
-// RandomUtil.getRandomString(5),RandomUtil.getRandomInt(), new
-// Date(tm-30000000000L), new Date(tm-6000000000L));
-// orders.add(order1);
-// orders.add(order2);
-// orders.add(order3);
 
-/**
- * CREATE TABLE orders ( ORDER_ID bigint NOT NULL, NOTE varchar(100) NOT NULL,
- * SALE_CODE int NOT NULL, CREATE_TIME timestamp NOT NULL, UPDATE_TIME timestamp
- * NOT NULL ); COMMIT;
- * 
- * CREATE SEQUENCE com_etl_good_bad_Order START 101; commit; SELECT
- * nextval('com_etl_good_bad_Order');
- */
 
-/**
- * Order orderA = orderDAO.findByOrderId(1); System.out.println("Order A : " +
- * orderA);
- * 
- * 
- * 
- * List<Order> orderAs = orderDAO.findAll(); for(Order order: orderAs){
- * System.out.println("Order As : " + order); }
- **/
+

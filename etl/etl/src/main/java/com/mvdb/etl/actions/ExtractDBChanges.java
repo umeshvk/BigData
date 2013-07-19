@@ -28,26 +28,32 @@ import com.mvdb.etl.dao.OrderDAO;
 import com.mvdb.etl.data.ColumnMetadata;
 import com.mvdb.etl.model.Configuration;
 
-public class ExtractDBChanges
+public class ExtractDBChanges  implements IAction
 {
     private static Logger logger = LoggerFactory.getLogger(ExtractDBChanges.class);
 
 
-    
-    
-    
     public static void main(String[] args) throws JSONException
     {
+
+//        boolean success = ActionUtils.markActionChainBroken("Just Testing");        
+//        System.exit(success ? 0 : 1);
+        ActionUtils.assertActionChainNotBroken();
+        ActionUtils.assertEnvironmentSetupOk();
+        ActionUtils.assertFileExists("~/.mvdb", "~/.mvdb missing. Existing.");
+        ActionUtils.assertFileExists("~/.mvdb/status.InitCustomerData.complete", "300init-customer-data.sh not executed yet. Exiting");
+        //This check is not required as data can be modified any number of times
+        //ActionUtils.assertFileDoesNotExist("~/.mvdb/status.ModifyCustomerData.complete", "ModifyCustomerData already done. Start with 100init.sh if required. Exiting");
+        ActionUtils.setUpInitFileProperty();
+        ActionUtils.createMarkerFile("~/.mvdb/status.ExtractDBChanges.start", true);
+        
         //String schemaDescription = "{ 'root' : [{'table' : 'orders', 'keyColumn' : 'order_id', 'updateTimeColumn' : 'update_time'}]}";
         logger.error("error");
         logger.warn("warning");
         logger.info("info");
         logger.debug("debug");
         logger.trace("trace");
-        
-
-
-        
+                
         String customerName = null;
         final CommandLineParser cmdLinePosixParser = new PosixParser();
         final Options posixOptions = constructPosixOptions();
@@ -82,7 +88,6 @@ public class ExtractDBChanges
             FileUtils.writeStringToFile(new File("/tmp/etl.extractdbchanges.directory.txt"), snapshotDirectory.getName(), false);
         } catch (IOException e)
         {
-            // TODO Auto-generated catch block
             e.printStackTrace();
             System.exit(1);
             return;
@@ -112,11 +117,23 @@ public class ExtractDBChanges
             genericDAO.fetchAll2(snapshotDirectory, new Timestamp(lastRefreshTime), table, keyColumnName, updateTimeColumnName);
         }
         
-        
+        //Need to factor this into a separate task so that extraction does not have to be repeated. 
+        //Extraction is an expensive task. 
+        try
+        {
+            ActionUtils.copyLocalDirectoryToHdfsDirectory(snapshotDirectory.getAbsolutePath(), snapshotDirectory.getAbsolutePath());
+        } catch (Throwable e)
+        {
+            e.printStackTrace();
+            logger.error("Objects Extracted from database. But copy of snapshot directory<" + snapshotDirectory.getAbsolutePath() +  "> to hdfs <" + "" + ">failed. Fix the problem and redo extract.", e);
+            System.exit(1);
+        }
+                
         //orderDAO.findAll(new Timestamp(lastRefreshTime), orderJsonFileConsumer);
         Configuration updateRefreshTimeConf = new Configuration(customerName, "last-refresh-time",
                 String.valueOf(currentTime));
         configurationDAO.update(updateRefreshTimeConf, String.valueOf(lastRefreshTimeConf.getValue()));
+        ActionUtils.createMarkerFile("~/.mvdb/status.ExtractDBChanges.complete", true);
 
     }
 
@@ -124,11 +141,12 @@ public class ExtractDBChanges
 
     private static File getSnapshotDirectory(ConfigurationDAO configurationDAO, String customerName)
     {
-        Configuration dataRootDirConfig = configurationDAO.find("global", "data_root");
+        Configuration dataRootDirConfig = configurationDAO.find(Constants.GLOBAL_CUSTOMER, Constants.GLOBAL_CUSTOMER_DATA_ROOT);
         String dataRootDir = dataRootDirConfig.getValue();
+        dataRootDir = ActionUtils.getAbsoluteFileName(dataRootDir);
         File customerDir = new File(dataRootDir, customerName);
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-        String snapshotDirectoryName = sdf.format(new Date());
+        String snapshotDirectoryName = sdf.format(new Date());       
         File snapshotDirectory = new File(customerDir, snapshotDirectoryName);
         return snapshotDirectory;
     }
@@ -141,3 +159,5 @@ public class ExtractDBChanges
         return posixOptions;
     }
 }
+
+

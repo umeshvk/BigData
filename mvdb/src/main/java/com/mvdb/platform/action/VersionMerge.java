@@ -18,6 +18,7 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
@@ -40,7 +41,11 @@ public class VersionMerge
 
         public void map(Text key, BytesWritable value, Context context) throws IOException, InterruptedException
         {
-
+            FileSplit fileSplit = (FileSplit)context.getInputSplit();
+            String filename = fileSplit.getPath().getName();
+            String customer = fileSplit.getPath().getParent().getName();
+            System.out.println("File name "+filename);
+            System.out.println("Directory and File name"+fileSplit.getPath().toString());
             context.write(key, value);
         }
     }
@@ -99,7 +104,7 @@ public class VersionMerge
             Collections.sort(gdrList);
             for(GenericDataRecord gdr : gdrList)
             {
-                Object keyValue = gdr.getKeyValue(); 
+                Object keyValue = gdr.getKeyValue();                
                 System.out.println("gdr keyValue:" + keyValue);
                 long timestamp = gdr.getTimestampLongValue();
                 System.out.println("gdr timestamp:" + timestamp);

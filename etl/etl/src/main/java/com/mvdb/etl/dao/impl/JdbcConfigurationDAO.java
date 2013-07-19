@@ -1,18 +1,14 @@
 package com.mvdb.etl.dao.impl;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.support.JdbcDaoSupport;
 
 import com.mvdb.etl.dao.ConfigurationDAO;
 import com.mvdb.etl.model.Configuration;
 import com.mvdb.etl.model.ConfigurationRowMapper;
-import com.mvdb.etl.model.Order;
 
 public class JdbcConfigurationDAO extends JdbcDaoSupport implements ConfigurationDAO
 {
@@ -160,11 +156,5 @@ public class JdbcConfigurationDAO extends JdbcDaoSupport implements Configuratio
             getJdbcTemplate().update(sql);
         }
     }
-
-
-
-    
-
-    
 
 }

@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.support.JdbcDaoSupport;
 
+import com.mvdb.etl.actions.ActionUtils;
 import com.mvdb.etl.consumer.GenericConsumer;
 import com.mvdb.etl.consumer.SequenceFileConsumer;
 import com.mvdb.etl.dao.GenericDAO;
@@ -119,8 +120,8 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
     @Override
     public DataHeader fetchAll2(File snapshotDirectory, Timestamp modifiedAfter, String objectName, final String keyName, final String updateTimeColumnName)
     {
-        final GenericConsumer genericConsumer = new SequenceFileConsumer(new File(snapshotDirectory, "data-"
-                + objectName + ".dat"));
+        File objectFile = new File(snapshotDirectory, "data-" + objectName + ".dat");
+        final GenericConsumer genericConsumer = new SequenceFileConsumer(objectFile);
         final DataHeader dataHeader = new DataHeader();
 
         String sql = "SELECT * FROM " + objectName + " o where o.update_time >= ?";
@@ -147,6 +148,8 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
         });
 
         genericConsumer.flushAndClose();
+        
+        
 
         writeDataHeader(dataHeader, objectName, snapshotDirectory);
         return dataHeader;

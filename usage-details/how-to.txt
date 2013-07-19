@@ -1,3 +1,4 @@
+
 The RDBMS does not have direct support for customer. 
 The data objects such as orders, order_line_item do not support per customer data.  
 The configuration object has global data and per customer data. 
