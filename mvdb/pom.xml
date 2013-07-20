@@ -7,23 +7,36 @@
 	<version>0.0.1</version>
 	<name>mvdb</name>
 	<url>http://maven.apache.org</url>
-	<!--
 	<build>
 		<pluginManagement>
 			<plugins>
-				<plugin>
-					<artifactId>maven-compiler-plugin</artifactId>
-					<version>2.3.2</version>
-					<configuration>
-						<source>1.6</source>
-						<target>1.6</target>
-						<compilerArgument></compilerArgument>
-					</configuration>
-				</plugin>
+<plugin>
+    <artifactId>maven-assembly-plugin</artifactId>
+    <version>2.2-beta-5</version>
+    <configuration>
+        <appendAssemblyId>false</appendAssemblyId>
+        <archive>
+            <manifest>
+                <mainClass>com.mvdb.platform.action.VersionMerge</mainClass>
+            </manifest>
+        </archive>
+        <descriptorRefs>
+            <descriptorRef>jar-with-dependencies</descriptorRef>
+        </descriptorRefs>
+    </configuration>
+    <executions>
+        <execution>
+            <id>make-assembly</id>
+            <phase>package</phase>
+            <goals>
+                <goal>single</goal>
+            </goals>
+        </execution>
+    </executions>
+</plugin>
 			</plugins>
 		</pluginManagement>
 	</build>
-	-->
 	<dependencies>
 		<dependency>
 			<groupId>junit</groupId>

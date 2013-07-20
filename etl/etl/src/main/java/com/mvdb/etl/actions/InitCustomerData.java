@@ -70,7 +70,7 @@ public class InitCustomerData  implements IAction
         // if you have time,
         // it's better to create an unit test rather than testing like this :)
 
-        ApplicationContext context = new ClassPathXmlApplicationContext("Spring-Module.xml");
+        ApplicationContext context = Top.getContext();
 
         
         final OrderDAO orderDAO = (OrderDAO) context.getBean("orderDAO");        
@@ -91,11 +91,19 @@ public class InitCustomerData  implements IAction
 
     private static void initConfiguration(ConfigurationDAO configurationDAO, String customerName)
     {
-        String schemaDescription = "{ ''root'' : [{''table'' : ''orders'', ''keyColumn'' : ''order_id'', ''updateTimeColumn'' : ''update_time''}]}";
+        String schemaDescription = "{ ''root'' : [" + 
+                        "{''table'' : ''orders'', ''keyColumn'' : ''order_id'', ''updateTimeColumn'' : ''update_time''}" +
+                        /**: Add one such line for every new table in the schema for the specified customer
+                        "{''table'' : ''order_line_item'', ''keyColumn'' : ''order_line_item_id'', ''updateTimeColumn'' : ''update_time''}" +
+                        **/ 
+                                                "]}";
         String[] sqlArray = new String[] {
                 "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'last-refresh-time', '0', '', '');",
-                "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'extraction-lock', '0', '', '');",
-                "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'load-lock', '0', '', '');", 
+                "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'last-copy-to-hdfs-time', '0', '', '');",
+                "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'last-merge-to-mvdb-time', '0', '', '');",
+                "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'refresh-lock', '0', '', '');",
+                "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'copy-to-hdfs-lock', '0', '', '');",
+                "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'merge-to-mvdb-lock', '0', '', '');", 
                 "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'schema-description', '" + schemaDescription + "', '', '');"
                 };
         configurationDAO.executeSQl(sqlArray);        

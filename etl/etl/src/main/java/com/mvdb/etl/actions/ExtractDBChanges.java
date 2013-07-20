@@ -6,6 +6,7 @@ import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
+import java.util.Properties;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -36,6 +37,7 @@ public class ExtractDBChanges  implements IAction
     public static void main(String[] args) throws JSONException
     {
 
+        ActionUtils.setUpInitFileProperty();
 //        boolean success = ActionUtils.markActionChainBroken("Just Testing");        
 //        System.exit(success ? 0 : 1);
         ActionUtils.assertActionChainNotBroken();
@@ -44,7 +46,7 @@ public class ExtractDBChanges  implements IAction
         ActionUtils.assertFileExists("~/.mvdb/status.InitCustomerData.complete", "300init-customer-data.sh not executed yet. Exiting");
         //This check is not required as data can be modified any number of times
         //ActionUtils.assertFileDoesNotExist("~/.mvdb/status.ModifyCustomerData.complete", "ModifyCustomerData already done. Start with 100init.sh if required. Exiting");
-        ActionUtils.setUpInitFileProperty();
+        
         ActionUtils.createMarkerFile("~/.mvdb/status.ExtractDBChanges.start", true);
         
         //String schemaDescription = "{ 'root' : [{'table' : 'orders', 'keyColumn' : 'order_id', 'updateTimeColumn' : 'update_time'}]}";
@@ -77,8 +79,10 @@ public class ExtractDBChanges  implements IAction
             System.exit(1);
         }
 
-        ApplicationContext context = new ClassPathXmlApplicationContext("Spring-Module.xml");
-
+        
+        
+        ApplicationContext context = Top.getContext();
+        
         final OrderDAO orderDAO = (OrderDAO) context.getBean("orderDAO");
         final ConfigurationDAO configurationDAO = (ConfigurationDAO) context.getBean("configurationDAO");
         final GenericDAO genericDAO = (GenericDAO)context.getBean("genericDAO");
@@ -117,15 +121,47 @@ public class ExtractDBChanges  implements IAction
             genericDAO.fetchAll2(snapshotDirectory, new Timestamp(lastRefreshTime), table, keyColumnName, updateTimeColumnName);
         }
         
-        //Need to factor this into a separate task so that extraction does not have to be repeated. 
+        //Unlikely failure
+        //But Need to factor this into a separate task so that extraction does not have to be repeated. 
         //Extraction is an expensive task. 
         try
         {
-            ActionUtils.copyLocalDirectoryToHdfsDirectory(snapshotDirectory.getAbsolutePath(), snapshotDirectory.getAbsolutePath());
+            String sourceDirectoryAbsolutePath = snapshotDirectory.getAbsolutePath(); 
+            
+            File sourceRelativeDirectoryPath  = getRelativeSnapShotDirectory(configurationDAO, sourceDirectoryAbsolutePath);            
+            String hdfsRoot = ActionUtils.getConfigurationValue(ConfigurationKeys.GLOBAL_CUSTOMER, ConfigurationKeys.GLOBAL_HDFS_ROOT);
+            String targetDirectoryFullPath = hdfsRoot + "/data" + sourceRelativeDirectoryPath;
+            
+            ActionUtils.copyLocalDirectoryToHdfsDirectory(sourceDirectoryAbsolutePath, targetDirectoryFullPath);
         } catch (Throwable e)
         {
             e.printStackTrace();
             logger.error("Objects Extracted from database. But copy of snapshot directory<" + snapshotDirectory.getAbsolutePath() +  "> to hdfs <" + "" + ">failed. Fix the problem and redo extract.", e);
+            System.exit(1);
+        }
+        
+        //Unlikely failure
+        //But Need to factor this into a separate task so that extraction does not have to be repeated. 
+        //Extraction is an expensive task. 
+        String targetZip = null; 
+        try
+        {
+            File targetZipDirectory = new File(snapshotDirectory.getParent(), "archives" );
+            if(!targetZipDirectory.exists())
+            {
+                boolean success = targetZipDirectory.mkdirs();
+                if(success == false)
+                {
+                    logger.error("Objects copied to hdfs. But able to create archive directory <" +  targetZipDirectory.getAbsolutePath() + ">. Fix the problem and redo extract.");
+                    System.exit(1);
+                }
+            }
+            targetZip = new File(targetZipDirectory, snapshotDirectory.getName() + ".zip"  ).getAbsolutePath();
+            ActionUtils.zipFullDirectory(snapshotDirectory.getAbsolutePath(), targetZip); 
+        } catch (Throwable e)
+        {
+            e.printStackTrace();
+            logger.error("Objects copied to hdfs. But zipping of snapshot directory<" + snapshotDirectory.getAbsolutePath() +  "> to  <" + targetZip + ">failed. Fix the problem and redo extract.", e);
             System.exit(1);
         }
                 
@@ -139,9 +175,18 @@ public class ExtractDBChanges  implements IAction
 
 
 
+    private static File getRelativeSnapShotDirectory(ConfigurationDAO configurationDAO, String absolutePath)
+    {
+        Configuration dataRootDirConfig = configurationDAO.find(ConfigurationKeys.GLOBAL_CUSTOMER, ConfigurationKeys.GLOBAL_LOCAL_DATA_ROOT);
+        String dataRootDir = dataRootDirConfig.getValue();
+        dataRootDir = ActionUtils.getAbsoluteFileName(dataRootDir);
+        int baseLength = dataRootDir.length(); 
+        return new File (absolutePath.substring(baseLength));
+    }
+    
     private static File getSnapshotDirectory(ConfigurationDAO configurationDAO, String customerName)
     {
-        Configuration dataRootDirConfig = configurationDAO.find(Constants.GLOBAL_CUSTOMER, Constants.GLOBAL_CUSTOMER_DATA_ROOT);
+        Configuration dataRootDirConfig = configurationDAO.find(ConfigurationKeys.GLOBAL_CUSTOMER, ConfigurationKeys.GLOBAL_LOCAL_DATA_ROOT);
         String dataRootDir = dataRootDirConfig.getValue();
         dataRootDir = ActionUtils.getAbsoluteFileName(dataRootDir);
         File customerDir = new File(dataRootDir, customerName);

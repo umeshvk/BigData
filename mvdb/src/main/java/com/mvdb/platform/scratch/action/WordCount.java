@@ -13,10 +13,10 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
+import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.core.util.StatusPrinter;
 //import ch.qos.logback.classic.LoggerContext;
 //import ch.qos.logback.core.util.StatusPrinter;
@@ -69,13 +69,20 @@ public class WordCount {
       logger.debug("debug1");
       logger.trace("trace1");
       
-      LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
+      ILoggerFactory lc =  LoggerFactory.getILoggerFactory();
+      System.err.println("lc:" + lc);
       // print logback's internal status
-      StatusPrinter.print(lc);
+      //StatusPrinter.print(lc);
 
       
     Configuration conf = new Configuration();
     String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
+    if(otherArgs != null) { 
+        for(String arg : otherArgs)
+        {
+            System.out.println(arg);
+        }
+    }
     if (otherArgs.length != 2) {
       System.err.println("Usage: wordcount <in> <out>");
       System.exit(2);

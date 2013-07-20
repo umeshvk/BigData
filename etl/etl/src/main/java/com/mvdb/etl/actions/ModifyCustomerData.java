@@ -32,7 +32,7 @@ public class ModifyCustomerData  implements IAction
         logger.debug("debug");
         logger.trace("trace");
         
-        ApplicationContext context = new ClassPathXmlApplicationContext("Spring-Module.xml");
+        ApplicationContext context = Top.getContext();
 
         final OrderDAO orderDAO = (OrderDAO) context.getBean("orderDAO");
 

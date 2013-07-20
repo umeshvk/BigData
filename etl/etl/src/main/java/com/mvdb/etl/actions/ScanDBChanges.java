@@ -65,7 +65,7 @@ public class ScanDBChanges  implements IAction
             System.exit(1);
         }
 
-        ApplicationContext context = new ClassPathXmlApplicationContext("Spring-Module.xml");
+        ApplicationContext context = Top.getContext();
 
         final ConfigurationDAO configurationDAO = (ConfigurationDAO) context.getBean("configurationDAO");
         final GenericDAO genericDAO = (GenericDAO)context.getBean("genericDAO");
@@ -83,7 +83,7 @@ public class ScanDBChanges  implements IAction
 
     private static File getSnapshotDirectory(ConfigurationDAO configurationDAO, String customerName, String snapshotDir)
     {
-        Configuration dataRootDirConfig = configurationDAO.find(Constants.GLOBAL_CUSTOMER, Constants.GLOBAL_CUSTOMER_DATA_ROOT);
+        Configuration dataRootDirConfig = configurationDAO.find(ConfigurationKeys.GLOBAL_CUSTOMER, ConfigurationKeys.GLOBAL_LOCAL_DATA_ROOT);
         String dataRootDir = dataRootDirConfig.getValue();
         File customerDir = new File(dataRootDir, customerName);
         File snapshotDirectory = new File(customerDir, snapshotDir);

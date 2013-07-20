@@ -1,11 +1,16 @@
 package com.mvdb.etl.actions;
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Date;
 import java.util.Properties;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -16,34 +21,41 @@ import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
+
+import com.mvdb.etl.dao.ConfigurationDAO;
+import com.mvdb.etl.dao.GenericDAO;
+import com.mvdb.etl.model.Configuration;
 
 public class ActionUtils
 {
-    private static Properties topProps = null; 
-    private static Logger logger = LoggerFactory.getLogger(ActionUtils.class);
+    private static Logger     logger   = LoggerFactory.getLogger(ActionUtils.class);
+
+    public static String getConfigurationValue(String customerName, String propertyName)
+    {
+        ApplicationContext context = Top.getContext();
+        final ConfigurationDAO configurationDAO = (ConfigurationDAO) context.getBean("configurationDAO");        
+        Configuration config = configurationDAO.find(customerName, propertyName);
+        return config.getValue();
+    }
     
     public static Properties getTopProperties()
     {
-        /**
-         * Don't bother to synchronize. In the worst case it will be loaded multiple times.
-         */
-        if(topProps != null)
-        {
-            return topProps;
-        }
+        Properties topProps = null;
+
         try
         {
-             String propFileName = getAbsoluteFileName("~/.mvdb/etl.init.properties");
-             Properties topProp = new Properties();
-             topProp.load(new FileInputStream(propFileName));
-             topProps = topProp;
-             return topProps;
+            String propFileName = getAbsoluteFileName("~/.mvdb/etl.init.properties");
+            Properties topProp = new Properties();
+            topProp.load(new FileInputStream(propFileName));
+            topProps = topProp;
+            return topProps;
         } catch (FileNotFoundException e)
-        {          
+        {
             e.printStackTrace();
             logger.error("", e);
         } catch (IOException e)
-        {           
+        {
             e.printStackTrace();
             logger.error("", e);
         }
@@ -52,15 +64,11 @@ public class ActionUtils
 
     }
 
+    
     public static void writeStringToHdfsFile(String str, String hdfsFile) throws IOException
     {
-        Properties topProps = ActionUtils.getTopProperties();
-        if (topProps == null)
-        {
-            throw new RuntimeException("Unable to find top properties.");
-        }
 
-        String hdfsHome = topProps.getProperty(Globals.HdfsHomeKey);
+        String hdfsHome = getConfigurationValue(ConfigurationKeys.GLOBAL_CUSTOMER, ConfigurationKeys.GLOBAL_HADOOP_HOME);
         org.apache.hadoop.conf.Configuration conf = new org.apache.hadoop.conf.Configuration();
         conf.addResource(new Path(hdfsHome + "/conf/core-site.xml"));
         FileSystem hdfsFileSystem = FileSystem.get(conf);
@@ -90,16 +98,9 @@ public class ActionUtils
 
     }
 
-    public static void copyLocalDirectoryToHdfsDirectory(String localDirectory, String hdfsDirectory)
-            throws Throwable
+    public static void copyLocalDirectoryToHdfsDirectory(String localDirectory, String hdfsDirectory) throws Throwable
     {
-        Properties topProps = ActionUtils.getTopProperties();
-        if (topProps == null)
-        {
-            throw new RuntimeException("Unable to find top properties.");
-        }
-
-        String hdfsHome = topProps.getProperty(Globals.HdfsHomeKey);
+        String hdfsHome = getConfigurationValue(ConfigurationKeys.GLOBAL_CUSTOMER, ConfigurationKeys.GLOBAL_HADOOP_HOME);
         org.apache.hadoop.conf.Configuration conf = new org.apache.hadoop.conf.Configuration();
         conf.addResource(new Path(hdfsHome + "/conf/core-site.xml"));
         FileSystem hdfsFileSystem = FileSystem.get(conf);
@@ -137,20 +138,14 @@ public class ActionUtils
 
     }
 
-
     public static boolean isActionChainBroken() throws IOException
     {
-        Properties topProps = ActionUtils.getTopProperties();
-        if (topProps == null)
-        {
-            throw new RuntimeException("Unable to find top properties.");
-        }
-        String hdfsHome = topProps.getProperty(Globals.HdfsHomeKey);
+        String hdfsHome = getConfigurationValue(ConfigurationKeys.GLOBAL_CUSTOMER, ConfigurationKeys.GLOBAL_HADOOP_HOME);
         org.apache.hadoop.conf.Configuration conf = new org.apache.hadoop.conf.Configuration();
         conf.addResource(new Path(hdfsHome + "/conf/core-site.xml"));
         FileSystem hdfsFileSystem = FileSystem.get(conf);
 
-        String actionChainStatusFile = topProps.getProperty(Globals.ActionChainStatusFile);
+        String actionChainStatusFile = getConfigurationValue(ConfigurationKeys.GLOBAL_CUSTOMER, ConfigurationKeys.GLOBAL_ACTION_CHAIN_STATUS_FILE);
         String actionChainStatusFileName = System.getProperty(File.separator) + actionChainStatusFile;
         Path actionChainStatusFilePath = new Path(actionChainStatusFileName);
 
@@ -164,17 +159,12 @@ public class ActionUtils
 
     public static String getActionChainBrokenCause() throws IOException
     {
-        Properties topProps = ActionUtils.getTopProperties();
-        if (topProps == null)
-        {
-            throw new RuntimeException("Unable to find top properties.");
-        }
-        String hdfsHome = topProps.getProperty(Globals.HdfsHomeKey);
+        String hdfsHome = getConfigurationValue(ConfigurationKeys.GLOBAL_CUSTOMER, ConfigurationKeys.GLOBAL_HADOOP_HOME);
         org.apache.hadoop.conf.Configuration conf = new org.apache.hadoop.conf.Configuration();
         conf.addResource(new Path(hdfsHome + "/conf/core-site.xml"));
         FileSystem hdfsFileSystem = FileSystem.get(conf);
 
-        String actionChainStatusFile = topProps.getProperty(Globals.ActionChainStatusFile);
+        String actionChainStatusFile = getConfigurationValue(ConfigurationKeys.GLOBAL_CUSTOMER, ConfigurationKeys.GLOBAL_ACTION_CHAIN_STATUS_FILE);
         String actionChainStatusFileName = /* hdfsHome + */File.separator + actionChainStatusFile;
         Path actionChainStatusFilePath = new Path(actionChainStatusFileName);
 
@@ -199,23 +189,17 @@ public class ActionUtils
     {
         try
         {
-            Properties topProps = ActionUtils.getTopProperties();
-            if (topProps == null)
-            {
-                throw new RuntimeException("Unable to find top properties.");
-            }
-
-            String actionChainStatusFile = topProps.getProperty(Globals.ActionChainStatusFile);
+            String actionChainStatusFile = getConfigurationValue(ConfigurationKeys.GLOBAL_CUSTOMER, ConfigurationKeys.GLOBAL_ACTION_CHAIN_STATUS_FILE);
             String actionChainStatusFileName = File.separator + actionChainStatusFile;
             writeStringToHdfsFile(reason, actionChainStatusFileName);
             return true;
         } catch (IOException e)
-        {            
+        {
             e.printStackTrace();
             logger.error("", e);
         }
         return false;
-        
+
     }
 
     public static void setUpInitFileProperty()
@@ -241,7 +225,6 @@ public class ActionUtils
         createMarkerFile(touchFile, false);
     }
 
-    
     public static String getAbsoluteFileName(String fileName)
     {
         if (fileName.startsWith("~" + File.separator))
@@ -249,13 +232,13 @@ public class ActionUtils
             fileName = System.getProperty("user.home") + fileName.substring(1);
         }
         File file = new File(fileName);
-        
+
         return file.getAbsolutePath();
     }
-    
+
     public static void createMarkerFile(String touchFile, boolean doNotCheckForPriorExistence)
     {
-        touchFile =  getAbsoluteFileName(touchFile);
+        touchFile = getAbsoluteFileName(touchFile);
         File file = new File(touchFile);
         if (doNotCheckForPriorExistence == false && file.exists() == true)
         {
@@ -319,7 +302,7 @@ public class ActionUtils
 
     public static void assertFileExists(String fileName, String failureMessage)
     {
-        fileName =  getAbsoluteFileName(fileName);
+        fileName = getAbsoluteFileName(fileName);
         File file = new File(fileName);
         if (file.exists() == false)
         {
@@ -330,12 +313,107 @@ public class ActionUtils
 
     public static void assertFileDoesNotExist(String fileName, String failureMessage)
     {
-        fileName =  getAbsoluteFileName(fileName);
+        fileName = getAbsoluteFileName(fileName);
         File file = new File(fileName);
         if (file.exists() == true)
         {
             logger.error(failureMessage);
             System.exit(1);
         }
+    }
+
+    public static void zipFullDirectory(String sourceDir, String targetZipFile)
+    {
+        FileOutputStream fos = null;
+        BufferedOutputStream bos = null;
+        ZipOutputStream zos = null;
+
+        try
+        {
+            fos = new FileOutputStream(targetZipFile);
+            bos = new BufferedOutputStream(fos);
+            zos = new ZipOutputStream(bos);
+            zipDir(sourceDir, new File(sourceDir), zos);
+            
+        } catch (FileNotFoundException e)
+        {
+            e.printStackTrace();
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+        } finally
+        {               
+            if(zos != null)
+            {
+                try
+                {
+                    zos.flush();
+                    zos.close();
+                } catch (IOException e)
+                {                  
+                    e.printStackTrace();
+                }
+                
+            }
+            if(bos != null)
+            {
+                try
+                {
+                    bos.flush();
+                    bos.close();
+                } catch (IOException e)
+                {                  
+                    e.printStackTrace();
+                }
+                
+            }
+            if(fos != null)
+            {
+                try
+                {
+                    fos.flush();
+                    fos.close();
+                } catch (IOException e)
+                {                   
+                    e.printStackTrace();
+                }
+                
+            }
+        }
+    }
+
+    private static void zipDir(String origDir, File dirObj, ZipOutputStream zos) throws IOException
+    {
+        File[] files = dirObj.listFiles();
+        byte[] tmpBuf = new byte[1024];
+
+        for (int i = 0; i < files.length; i++)
+        {
+            if (files[i].isDirectory())
+            {
+                zipDir(origDir, files[i], zos);
+                continue;
+            }
+            String wAbsolutePath = files[i].getAbsolutePath().substring(origDir.length()+1,
+                    files[i].getAbsolutePath().length());
+            FileInputStream in = new FileInputStream(files[i].getAbsolutePath());
+            zos.putNextEntry(new ZipEntry(wAbsolutePath));
+            int len;
+            while ((len = in.read(tmpBuf)) > 0)
+            {
+                zos.write(tmpBuf, 0, len);
+            }
+            zos.closeEntry();
+            in.close();
+        }
+    }
+
+    public static void loggerTest(Logger logger)
+    {
+        logger.error("error");
+        logger.warn("warning");
+        logger.info("info");
+        logger.debug("debug");
+        logger.trace("trace");        
     }
 }

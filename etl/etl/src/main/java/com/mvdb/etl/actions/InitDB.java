@@ -1,9 +1,8 @@
 package com.mvdb.etl.actions;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Properties;
 
 import org.slf4j.Logger;
@@ -19,29 +18,21 @@ public class InitDB implements IAction
 {
     
     private static Logger logger = LoggerFactory.getLogger(InitDB.class);
-
-
-
-    
-        
+            
     public static void main(String[] args)
-    {
-        
+    {        
         ActionUtils.assertEnvironmentSetupOk();
         ActionUtils.assertFileExists("~/.mvdb", "~/.mvdb missing. Existing.");
         ActionUtils.assertFileExists("~/.mvdb/status.init.sh.complete", "init.sh not executed yet. Exiting");
         ActionUtils.assertFileDoesNotExist("~/.mvdb/status.InitDB.complete", "initDB already done. Start with init.sh if required. Exiting");
-        
+       
         ActionUtils.setUpInitFileProperty();
-        
-        
+                
         ActionUtils.createMarkerFile("~/.mvdb/status.InitDB.start");
-        logger.error("error");
-        logger.warn("warning");
-        logger.info("info");
-        logger.debug("debug");
-        logger.trace("trace");
-        ApplicationContext context = new ClassPathXmlApplicationContext("Spring-Module.xml");
+        
+        ActionUtils.loggerTest(logger);
+        
+        ApplicationContext context = Top.getContext();
 
         createConfiguration(context);
         createOrder(context);
@@ -66,8 +57,6 @@ public class InitDB implements IAction
         orderDAO.executeSQl(commands);
         
     }
-
-
     
     private static void createConfiguration(ApplicationContext context)
     {
@@ -77,57 +66,30 @@ public class InitDB implements IAction
         {
             throw new RuntimeException("Unable to find top properties.");
         }
-        String globalDataRoot = topProps.getProperty(Globals.DataRootKey);
-        String hdfsHome = topProps.getProperty(Globals.HdfsHomeKey);
-        String[] commands = {
-                "DROP TABLE IF EXISTS configuration;",
-                "CREATE TABLE  configuration (" 
+        List<String> commandList = new ArrayList<String>();
+        commandList.add("DROP TABLE IF EXISTS configuration;");
+        commandList.add("CREATE TABLE  configuration (" 
                         + " customer varchar(128)  NOT NULL, " 
                         + " name varchar(128)  NOT NULL,"
                         + " value varchar(128)  NOT NULL, " 
                         + " category varchar(32)  NOT NULL, " 
                         + " note varchar(512)  NOT NULL, " 
-                        + "UNIQUE (customer, name, value, category)); ", 
-                "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('global', '" + Globals.DataRootKey + "', '" + globalDataRoot + "', '', '');", 
-                "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('global', '" + Globals.HdfsHomeKey + "', '" + hdfsHome + "', '', '');",
-                "COMMIT;" };
-
+                        + "UNIQUE (customer, name, value, category)); ");
         
+        Iterator<?> keysIter = topProps.keySet().iterator();
+        while(keysIter.hasNext())
+        {
+            String key = (String)keysIter.next();
+            String value = topProps.getProperty(key);
+            commandList.add("INSERT INTO configuration (customer, name, value, category, note) VALUES  ('global', '" + key + "', '" + value + "', '', '');");
+        }
+        commandList.add("COMMIT;");
+        
+        String[] commands =commandList.toArray(new String[0]);
+                
         configurationDAO.executeSQl(commands);
         
     }
 
-
 }
 
-// Order order1 = new Order(orderDAO.getNextSequenceValue(),
-// RandomUtil.getRandomString(5),RandomUtil.getRandomInt(), new
-// Date(tm-10000000000L), new Date(tm-5000000000L));
-// Order order3 = new Order(orderDAO.getNextSequenceValue(),
-// RandomUtil.getRandomString(5),RandomUtil.getRandomInt(), new
-// Date(tm-20000000000L), new Date(tm-4000000000L));
-// Order order2 = new Order(orderDAO.getNextSequenceValue(),
-// RandomUtil.getRandomString(5),RandomUtil.getRandomInt(), new
-// Date(tm-30000000000L), new Date(tm-6000000000L));
-// orders.add(order1);
-// orders.add(order2);
-// orders.add(order3);
-
-/**
- * CREATE TABLE orders ( ORDER_ID bigint NOT NULL, NOTE varchar(100) NOT NULL,
- * SALE_CODE int NOT NULL, CREATE_TIME timestamp NOT NULL, UPDATE_TIME timestamp
- * NOT NULL ); COMMIT;
- * 
- * CREATE SEQUENCE com_etl_good_bad_Order START 101; commit; SELECT
- * nextval('com_etl_good_bad_Order');
- */
-
-/**
- * Order orderA = orderDAO.findByOrderId(1); System.out.println("Order A : " +
- * orderA);
- * 
- * 
- * 
- * List<Order> orderAs = orderDAO.findAll(); for(Order order: orderAs){
- * System.out.println("Order As : " + order); }
- **/
