@@ -99,8 +99,9 @@ public class InitCustomerData  implements IAction
                                                 "]}";
         String[] sqlArray = new String[] {
                 "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'last-refresh-time', '0', '', '');",
-                "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'last-copy-to-hdfs-time', '0', '', '');",
-                "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'last-merge-to-mvdb-time', '0', '', '');",
+                "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'last-refresh-dirname', '00000000000000', '', '');",
+                "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'last-copy-to-hdfs-dirname', '00000000000000', '', '');",
+                "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'last-merge-to-mvdb-dirname', '00000000000000', '', '');",
                 "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'refresh-lock', '0', '', '');",
                 "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'copy-to-hdfs-lock', '0', '', '');",
                 "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'merge-to-mvdb-lock', '0', '', '');", 

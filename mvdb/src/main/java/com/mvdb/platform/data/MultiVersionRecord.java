@@ -23,7 +23,9 @@ public class MultiVersionRecord implements Externalizable
         for(GenericDataRecord gdr : versionList)
         {
             sb.append(gdr);
+            sb.append(",");
         }
+        sb.setLength(sb.length()-1);
         sb.append("]");
         
         return sb.toString();

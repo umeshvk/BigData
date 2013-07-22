@@ -132,25 +132,26 @@ public class GenericDataRecord implements DataRecord
     {
         StringBuffer sb = new StringBuffer();
         sb.append("{");
-        sb.append("mvdbKeyValue");
+        sb.append("\"mvdbKeyValue\"");
         sb.append(" : ");
-        sb.append(mvdbKeyValue);
+        sb.append("\"" + mvdbKeyValue + "\"");
         sb.append(", ");
-        sb.append("mvdbUpdateTime");
+        sb.append("\"mvdbUpdateTime\"");
         sb.append(" : ");
-        sb.append(mvdbUpdateTime);
+        sb.append("\"" + mvdbUpdateTime + "\"");
         sb.append(", ");
         Iterator<String> keysIter = dataMap.keySet().iterator();
         while(keysIter.hasNext())
         {
-            sb.append("(");
             String key = keysIter.next();        
             Object value = dataMap.get(key);
             
+            sb.append("\"");
             sb.append(key);
-            sb.append(" : ");
+            sb.append("\"");
+            sb.append(" : \"");
             sb.append(value);
-            sb.append("), ");
+            sb.append("\", ");
         }
         int length = sb.length() -2; 
         if(length> 0)

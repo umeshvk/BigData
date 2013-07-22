@@ -19,9 +19,9 @@ public class ConfigurationKeys
     public static final String MERGE_TO_HDFS_LOCK = "merge-to-mvdb-lock"; 
     
     //Process marker
-    public static final String LAST_REFRES_HTIME = "last-refresh-time"; 
-    public static final String LAST_COPY_TO_HDFS_TIME = "last-copy-to-hdfs-time"; 
-    public static final String LAST_MERGE_TO_MVDB_TIME = "last-merge-to-mvdb-time"; 
+    public static final String LAST_REFRESH_TIME = "last-refresh-time"; 
+    public static final String LAST_COPY_TO_HDFS_DIRNAME = "last-copy-to-hdfs-dirname"; 
+    public static final String LAST_MERGE_TO_MVDB_DIRNAME = "last-merge-to-mvdb-dirname"; 
     
     /*
     //Keys in  ~/.mvdb/etl.init.properties

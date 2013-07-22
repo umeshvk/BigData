@@ -133,6 +133,8 @@ public class ExtractDBChanges  implements IAction
             String targetDirectoryFullPath = hdfsRoot + "/data" + sourceRelativeDirectoryPath;
             
             ActionUtils.copyLocalDirectoryToHdfsDirectory(sourceDirectoryAbsolutePath, targetDirectoryFullPath);
+            String dirName = snapshotDirectory.getName();
+            ActionUtils.setConfigurationValue(customerName, ConfigurationKeys.LAST_COPY_TO_HDFS_DIRNAME, dirName);
         } catch (Throwable e)
         {
             e.printStackTrace();

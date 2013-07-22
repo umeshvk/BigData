@@ -3,7 +3,9 @@
 touch ~/.mvdb/status.init.sh.started
 mkdir -p ~/.mvdb
 rm -f ~/.mvdb/status.*
+rm -rf ~/.mvdb/etl/data
 mkdir -p ~/.mvdb/etl/data
+hadoop fs -rmr /data
 rm -f ~/.mvdb/etl.init.properties
 touch ~/.mvdb/etl.init.properties
 echo "Minimally you will need a relational database and hdfs with hadoop setup for this project."

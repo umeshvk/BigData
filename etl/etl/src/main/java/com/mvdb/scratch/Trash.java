@@ -4,6 +4,78 @@ public class Trash
 {
 
     /**
+
+    String startDirectory = otherArgs[0]; 
+    String objectName = otherArgs[1]; 
+    String passiveDB = otherArgs[2]; 
+    
+    if(startDirectory.startsWith("/") == false)
+    {
+        System.err.println(String.format("The startDirectory %s must be a absolute path", startDirectory));
+        System.exit(1);
+    }
+    
+//    if(endDirectory.startsWith("/") == false)
+//    {
+//        System.err.println(String.format("The endDirectory %s must be a absolute path", endDirectory));
+//        System.exit(1);
+//    }
+    
+    if(startDirectory.endsWith("/"))
+    {
+        startDirectory = startDirectory.substring(0, startDirectory.length()-1);
+    }
+//    if(endDirectory.endsWith("/"))
+//    {
+//        endDirectory = endDirectory.substring(0, endDirectory.length()-1);
+//    }
+    
+    String parentStartDirectory = startDirectory.substring(0, startDirectory.lastIndexOf('/')); 
+    //String parentEndDirectory = endDirectory.substring(0, endDirectory.lastIndexOf('/'));
+    
+//    if(parentStartDirectory.equals(parentEndDirectory) == false)
+//    {
+//        System.err.println(String.format("The startDirectory %s and endDirectory %s must have the same parent", startDirectory, endDirectory));
+//        System.exit(1);
+//    }
+        
+    String[] files = FileUtil.list(new File(parentStartDirectory));
+    StringBuffer inputFileNames = new StringBuffer();
+//    for(String fileName: files)
+//    {
+//        if(fileName.compareTo(startDirectory) >= 0 && fileName.compareTo(endDirectory) <= 0)
+//        {
+//            inputFileNames.append(fileName + "/" + objectName + ", ");
+//        }
+//    }
+      for(String fileName: files)
+      {
+          if(fileName.compareTo(startDirectory) >= 0 && fileName.matches("^[0-9]{14}$"))
+          {
+              inputFileNames.append(parentStartDirectory + "/" + fileName + "/" + objectName + ", ");
+          }
+      }
+    
+    inputFileNames.append(parentStartDirectory + "/dbdata/" + passiveDB + "/" + objectName );
+    
+    String target = parentStartDirectory + "/dbdata/tmp-mvdb"; 
+    
+    System.out.println(String.format("InputPaths:%s", inputFileNames.toString()));
+    System.out.println(String.format("Target:%s", target));
+    
+    
+    //FileInputFormat.addInputPaths(job, "/home/umesh/.mvdb/etl/data/alpha/20130719114223/data-orders.dat /home/umesh/.mvdb/etl/data/alpha/20130719134839/data-orders.dat " );
+
+**/
+
+/*
+Configuration conf = new Configuration();
+conf.set("fs.default.name","hdfs://localhost:54310");
+FileSystem fs = FileSystem.get(conf);
+    //if(true) System.exit(1);
+*/
+    
+    /**
     String globalDataRoot = topProps.getProperty(Constants.DataRootKey);
     String hdfsHome = topProps.getProperty(Constants.HdfsHomeKey);
     String[] commands = {

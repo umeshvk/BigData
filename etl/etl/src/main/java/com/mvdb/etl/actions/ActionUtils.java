@@ -39,6 +39,16 @@ public class ActionUtils
         return config.getValue();
     }
     
+    public static String setConfigurationValue(String customerName, String propertyName, String propertyValue)
+    {
+        ApplicationContext context = Top.getContext();
+        final ConfigurationDAO configurationDAO = (ConfigurationDAO) context.getBean("configurationDAO");        
+        Configuration config = configurationDAO.find(customerName, propertyName);
+        config.setValue(propertyValue);
+        configurationDAO.update(config, null);
+        return config.getValue();
+    }
+    
     public static Properties getTopProperties()
     {
         Properties topProps = null;

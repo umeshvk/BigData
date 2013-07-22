@@ -1,3 +1,9 @@
+###Use the file list from this for local testing
+hadoop fs -lsr file:///home/umesh/.mvdb/etl/data/alpha  | awk '{print $8}' | grep 'data\-.*\.dat' | grep ".*\/[0-9]\{14\}/"
+###Use the file list from this for remote testing
+hadoop fs -lsr hdfs://localhost:9000/data/alpha | awk '{print $8}' | grep 'data\-.*\.dat' | grep ".*\/[0-9]\{14\}/"
+
+
 #There are two mvdb directories. One of them is active. The other one is passive. 
 hadoop fs -mkdir /data/alpha/mvdb1
 hadoop fs -mkdir /data/alpha/mvdb2

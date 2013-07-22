@@ -45,7 +45,7 @@ public class ModifyCustomerData  implements IAction
         for(int i=0;i<modifyCount;i++)
         {
              long orderId = (long)Math.floor((Math.random() * maxId)) + 1L;
-             System.out.println("Modify Id " + orderId + " in orders");
+             logger.info("Modify Id " + orderId + " in orders");
              Order theOrder = orderDAO.findByOrderId(orderId);
 //             System.out.println("theOrder : " + theOrder);
              theOrder.setNote(RandomUtil.getRandomString(4));
@@ -55,7 +55,7 @@ public class ModifyCustomerData  implements IAction
 //             System.out.println("theOrder Modified: " + theOrder);
 
         }
-        System.out.println("Modified " + modifyCount + " orders");
+        logger.info("Modified " + modifyCount + " orders");
         ActionUtils.createMarkerFile("~/.mvdb/status.ModifyCustomerData.complete", true);
     }
 }
