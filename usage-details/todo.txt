@@ -1,0 +1,23 @@
+Implement the delete functionality. 
+
+test merge flow.
+Add these three steps to the mertge flow:
+delete passive mvdb folder
+rename merged-tmp-folder to be the new passive mvdb folder
+swap passive and active mvdb folder
+
+Scan all the versions for all the records of all the tables using Scanner. 
+Create a Time slice. 
+Scan the time slice. 
+Compare visually the scan of time slice to the scan of multi version record to see if the slice captures records and reflects the correct data.
+
+Run queries on slice. 
+
+Store a new schema if there are changes from previous schema. 
+Be able select effective schema for a specific time. 
+In creating a slice evaluate use of the schema to create columns with the correct type. 
+Try using hive on this slice. 
+
+Use MongoDB to cache the query results. 
+Or Use Hbase to so cache the query results. 
+
