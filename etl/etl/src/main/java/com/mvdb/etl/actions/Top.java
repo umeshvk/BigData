@@ -4,7 +4,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 //Add a comment to test new branch
-//Add another comment
 public class Top
 {
 
