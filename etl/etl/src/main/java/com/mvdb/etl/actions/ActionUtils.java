@@ -7,6 +7,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Properties;
 import java.util.zip.ZipEntry;
@@ -24,19 +26,39 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 
 import com.mvdb.etl.dao.ConfigurationDAO;
-import com.mvdb.etl.dao.GenericDAO;
 import com.mvdb.etl.model.Configuration;
 
 public class ActionUtils
 {
     private static Logger     logger   = LoggerFactory.getLogger(ActionUtils.class);
 
+    private static SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+    public static Date getDate(String yyyyMMddHHmmss)
+    {
+        try
+        {
+            return sdf.parse(yyyyMMddHHmmss);
+        } catch (ParseException e)
+        {            
+            return null;
+        }
+        
+    }
+    
+
+    
     public static String getConfigurationValue(String customerName, String propertyName)
     {
         ApplicationContext context = Top.getContext();
         final ConfigurationDAO configurationDAO = (ConfigurationDAO) context.getBean("configurationDAO");        
         Configuration config = configurationDAO.find(customerName, propertyName);
         return config.getValue();
+    }
+    
+    public static long getConfigurationValueLong(String customerName, String propertyName)
+    {
+        String value = getConfigurationValue(customerName, propertyName);
+        return Long.parseLong(value);
     }
     
     public static String setConfigurationValue(String customerName, String propertyName, String propertyValue)

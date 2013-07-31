@@ -242,7 +242,7 @@ public class JdbcOrderDAO extends JdbcDaoSupport implements OrderDAO
     {
         long tm = new Date().getTime();
         getJdbcTemplate().update("update orders set note = ?, sale_code = ?, update_time = ? where order_id = ?",
-                new Object[] { order.getNote(), order.getSaleCode(), new java.sql.Timestamp(tm), order.getOrderId() });
+                new Object[] { order.getNote(), order.getSaleCode(), new java.sql.Timestamp(order.getUpdateTime().getTime()) , order.getOrderId() });
     }
 
 

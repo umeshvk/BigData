@@ -193,7 +193,8 @@ public class ExtractDBChanges  implements IAction
         dataRootDir = ActionUtils.getAbsoluteFileName(dataRootDir);
         File customerDir = new File(dataRootDir, customerName);
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-        String snapshotDirectoryName = sdf.format(new Date());       
+        long lastUsedEndTime = ActionUtils.getConfigurationValueLong(customerName, ConfigurationKeys.LAST_USED_END_TIME);
+        String snapshotDirectoryName = sdf.format(new Date(lastUsedEndTime));       
         File snapshotDirectory = new File(customerDir, snapshotDirectoryName);
         return snapshotDirectory;
     }

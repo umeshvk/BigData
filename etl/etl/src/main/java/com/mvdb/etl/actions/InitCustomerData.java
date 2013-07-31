@@ -38,6 +38,8 @@ public class InitCustomerData  implements IAction
         logger.debug("debug");
         logger.trace("trace");
         
+        Date startDate  = null;
+        Date endDate  = null;
         String customerName= null; 
         int batchCountF = 0;
         int batchSizeF = 0;
@@ -61,11 +63,41 @@ public class InitCustomerData  implements IAction
                 String batchCountStr = commandLine.getOptionValue("batchCount");
                 batchCountF = Integer.parseInt(batchCountStr);
             }
+            if (commandLine.hasOption("startDate"))
+            {
+                String startDateStr = commandLine.getOptionValue("startDate");
+                startDate = ActionUtils.getDate(startDateStr);
+            }
+            if (commandLine.hasOption("endDate"))
+            {
+                String endDateStr = commandLine.getOptionValue("endDate");
+                endDate = ActionUtils.getDate(endDateStr);
+            }
         } catch (ParseException parseException) // checked exception
         {
             System.err
                     .println("Encountered exception while parsing using PosixParser:\n" + parseException.getMessage());
         }
+        
+        
+        if (startDate == null)
+        {
+            System.err.println("startDate has not been specified with the correct format YYYYMMddHHmmss.  Aborting...");
+            System.exit(1);
+        }
+        
+        if (endDate == null)
+        {
+            System.err.println("endDate has not been specified with the correct format YYYYMMddHHmmss.  Aborting...");
+            System.exit(1);
+        }
+        
+        if (endDate.after(startDate) == false)
+        {
+            System.err.println("endDate must be after startDate.  Aborting...");
+            System.exit(1);
+        }
+        
 
         // if you have time,
         // it's better to create an unit test rather than testing like this :)
@@ -76,8 +108,8 @@ public class InitCustomerData  implements IAction
         final OrderDAO orderDAO = (OrderDAO) context.getBean("orderDAO");        
         final ConfigurationDAO configurationDAO = (ConfigurationDAO) context.getBean("configurationDAO");
 
-        initData(orderDAO, batchCountF, batchSizeF);
-        initConfiguration(configurationDAO, customerName);
+        initData(orderDAO, batchCountF, batchSizeF, startDate, endDate);
+        initConfiguration(configurationDAO, customerName, endDate);
         
         int total = orderDAO.findTotalOrders();
         System.out.println("Total : " + total);
@@ -89,7 +121,7 @@ public class InitCustomerData  implements IAction
 
     }
 
-    private static void initConfiguration(ConfigurationDAO configurationDAO, String customerName)
+    private static void initConfiguration(ConfigurationDAO configurationDAO, String customerName, Date endDate)
     {
         String schemaDescription = "{ ''root'' : [" + 
                         "{''table'' : ''orders'', ''keyColumn'' : ''order_id'', ''updateTimeColumn'' : ''update_time''}" +
@@ -98,6 +130,7 @@ public class InitCustomerData  implements IAction
                         **/ 
                                                 "]}";
         String[] sqlArray = new String[] {
+                "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'last-used-end-time', '" + endDate.getTime() + "', '', '');",
                 "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'last-refresh-time', '0', '', '');",
                 "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'last-refresh-dirname', '00000000000000', '', '');",
                 "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'last-copy-to-hdfs-dirname', '00000000000000', '', '');",
@@ -110,9 +143,9 @@ public class InitCustomerData  implements IAction
         configurationDAO.executeSQl(sqlArray);        
     }
 
-    private static void initData(final OrderDAO orderDAO, final int batchCount, final int batchSize)
+    private static void initData(final OrderDAO orderDAO, final int batchCount, final int batchSize, final Date startDate, final Date endDate)
     {
-        final long tm = new Date().getTime();
+        
         for (int batchIndex = 0; batchIndex < batchCount; batchIndex++)
         {
             final int batchIndexFinal = batchIndex;
@@ -122,11 +155,15 @@ public class InitCustomerData  implements IAction
                 public void execute()
                 {
 
+                    
                     List<Order> orders = new ArrayList<Order>();
                     for (int recordIndex = 0; recordIndex < batchSize; recordIndex++)
                     {
+                        Date createDate = RandomUtil.getRandomDateInRange(startDate, endDate);
+                        Date updateDate = new Date();
+                        updateDate.setTime(createDate.getTime());
                         Order order = new Order(orderDAO.getNextSequenceValue(), RandomUtil.getRandomString(5),
-                                RandomUtil.getRandomInt(), new Date(tm), new Date(tm));
+                                RandomUtil.getRandomInt(), createDate, updateDate);
                         orders.add(order);
                     }
                     orderDAO.insertBatch(orders);
@@ -149,6 +186,8 @@ public class InitCustomerData  implements IAction
         posixOptions.addOption("customer", true, "Customer Name");
         posixOptions.addOption("batchCount", true, "Number of batches. Each batch is a transaction.");
         posixOptions.addOption("batchSize", true, "Number of records inserted in each batch");
+        posixOptions.addOption("startDate", true, "Start Date");
+        posixOptions.addOption("endDate", true, "End Date");
         return posixOptions;
     }
 }

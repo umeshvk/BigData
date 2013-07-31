@@ -22,6 +22,9 @@ public class ConfigurationKeys
     public static final String LAST_REFRESH_TIME = "last-refresh-time"; 
     public static final String LAST_COPY_TO_HDFS_DIRNAME = "last-copy-to-hdfs-dirname"; 
     public static final String LAST_MERGE_TO_MVDB_DIRNAME = "last-merge-to-mvdb-dirname"; 
+    public static final String LAST_USED_END_TIME = "last-used-end-time"; 
+    
+    
     
     /*
     //Keys in  ~/.mvdb/etl.init.properties

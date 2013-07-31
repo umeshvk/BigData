@@ -1,5 +1,7 @@
 package com.mvdb.etl.util;
 
+import java.util.Date;
+
 public class RandomUtil
 {
 
@@ -11,6 +13,18 @@ public class RandomUtil
 
     private static final int      WORD_COUNT = WORDS.length;
 
+    public static Date getRandomDateInRange(Date startDate, Date endDate)
+    {
+        long startTime = startDate.getTime();
+        long endTime = endDate.getTime();
+        long timeDiff = endTime - startTime;
+
+        long delta = (long) (Math.random() * ((double) timeDiff));
+        Date randomDate = new Date();
+        randomDate.setTime(startTime + delta);
+        return randomDate;
+    }
+    
     public static String getRandomString(int wordCount)
     {
         StringBuffer sb = new StringBuffer();
