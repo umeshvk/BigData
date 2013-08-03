@@ -139,6 +139,7 @@ public class InitCustomerData  implements IAction
                 "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'refresh-lock', '0', '', '');",
                 "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'copy-to-hdfs-lock', '0', '', '');",
                 "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'merge-to-mvdb-lock', '0', '', '');", 
+                "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'active-db-dir', 'mv1', '', '');",
                 "INSERT INTO configuration (customer, name, value, category, note) VALUES  ('" + customerName + "', 'schema-description', '" + schemaDescription + "', '', '');"
                 };
         configurationDAO.executeSQl(sqlArray);        

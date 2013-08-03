@@ -64,11 +64,7 @@ public class VersionMerge
             System.out.println("Directory and File name"+fileSplit.getPath().toString());
             
             mergeKey.setCompany(customer);
-            String fn = filename.substring(filename.indexOf('-') + 1, filename.lastIndexOf(".dat"));
-                    
-            //fn = filename.replaceAll("-", "");             
-            //fn = fn.replaceAll(".dat", "");
-            
+            String fn = filename.substring(filename.indexOf('-') + 1, filename.lastIndexOf(".dat"));            
             mergeKey.setTable(fn);
             mergeKey.setId(key.toString());
             
@@ -79,7 +75,6 @@ public class VersionMerge
 
     private static class TimestampData
     {
-        String timestamp; 
         GenericDataRecord gdr; 
         GenericIdRecord gir;
     }
@@ -98,7 +93,6 @@ public class VersionMerge
              String[] timeStampArray = timeStampCSV.split(",");
              sortedTimeStampList = Arrays.asList(timeStampArray);
              Collections.sort(sortedTimeStampList);
-             int i =0; 
         }
         
         protected void cleanup(Context context) throws IOException, InterruptedException 
@@ -192,6 +186,8 @@ public class VersionMerge
             while(timestampKeysSetIter.hasNext())
             {
                 String timestamp = timestampKeysSetIter.next(); 
+                System.out.println("ts:" + timestamp);
+                System.out.println("MergeKey:" + mergeKey.toString());
                 TimestampData timestampData = sortedMap.get(timestamp);
                 GenericDataRecord gdr = timestampData.gdr; 
                 GenericIdRecord gir = timestampData.gir;
@@ -280,28 +276,37 @@ public class VersionMerge
 
     public static void main(String[] args) throws Exception
     {        
-        logger.error("error1");
-        logger.warn("warning1");
-        logger.info("info1");
-        logger.debug("debug1");
-        logger.trace("trace1");
+
         ActionUtils.setUpInitFileProperty();
-//        LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
-//        StatusPrinter.print(lc);
 
         Configuration conf = new Configuration();
         String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
         //Also add  lastMergedTimeStamp and  mergeUptoTimestamp and passive db name which would be mv1 or mv2
-        if (otherArgs.length != 3)
+        if (otherArgs.length != 1)
         {
-            System.err.println("Usage: versionmerge <customer-directory>");
-            System.exit(2);
+            System.err.println("Usage: versionmerge <customer-directory> <lastMergedDirName> <lastCopiedDirName> <customerName>");
+            System.exit(1);
         }
         //Example: file:/home/umesh/.mvdb/etl/data/alpha
         //Example: hdfs://localhost:9000/data/alpha
         String customerDirectory = otherArgs[0];
-        String lastMergedDirName = otherArgs[1];
-        String lastCopiedDirName = otherArgs[2];
+        String customerName = new Path(customerDirectory).getName();
+        
+        String lastMergedDirName = ActionUtils.getConfigurationValue(customerName, ConfigurationKeys.LAST_MERGE_TO_MVDB_DIRNAME); //otherArgs[1];
+        String lastCopiedDirName = ActionUtils.getConfigurationValue(customerName, ConfigurationKeys.LAST_COPY_TO_HDFS_DIRNAME); //otherArgs[2];
+        
+        String passiveDBName = null; 
+        
+        String activeDBName = ActionUtils.getConfigurationValue(customerName, ConfigurationKeys.ACTIVE_DB_DIR);
+        if(activeDBName.equals("mv1"))
+        {
+            passiveDBName = "mv2"; 
+        } else if(activeDBName.equals("mv2")){ 
+            passiveDBName = "mv1"; 
+        } else { 
+            System.err.println(String.format("Usage: activeDBName %s is incorrect", activeDBName));
+            System.exit(2);
+        }
         
         org.apache.hadoop.conf.Configuration conf1 = new org.apache.hadoop.conf.Configuration();
         //conf1.addResource(new Path("/home/umesh/ops/hadoop-1.2.0/conf/core-site.xml"));
@@ -309,9 +314,14 @@ public class VersionMerge
         
         Path topPath = new Path(customerDirectory);
         
+        
         //Clean scratch db
-        Path passiveDbPath = new Path(topPath, "db/mv1");
-        Path tempDbPath = new Path(topPath, "db/tmp-" + (int)(Math.random() * 100000));
+        Path passiveDbPath = new Path(topPath, "db/" + passiveDBName);
+        Path tempDbPath = new Path(topPath, "db/" + "tmp-" + (int)(Math.random() * 100000));        
+        Path passiveDBBackupPath = new Path(topPath, "db/" + passiveDBName + ".old");
+        
+        
+        
         if(hdfsFileSystem.exists(tempDbPath))
         {
             boolean success = hdfsFileSystem.delete(tempDbPath, true);
@@ -322,7 +332,8 @@ public class VersionMerge
             }
         }
         //last three parameters are hardcoded and  the nulls must be replaced later after changing inout parameters. 
-        Path[] inputPaths = getInputPaths(hdfsFileSystem, topPath, lastMergedDirName, lastCopiedDirName, null);
+        Path[] inputPaths = getInputPaths(hdfsFileSystem, topPath, lastMergedDirName, lastCopiedDirName, passiveDbPath);
+        String lastDirName = getLastDirName(inputPaths);
         Set<String> tableNameSet = new HashSet<String>();
         Set<String> timeStampSet = new HashSet<String>();
         for(Path path: inputPaths)
@@ -351,11 +362,11 @@ public class VersionMerge
         job.setInputFormatClass(SequenceFileInputFormat.class);
         job.setOutputFormatClass(SequenceFileOutputFormat.class);
         
-        String lastDirName = null;
-        if(inputPaths != null && inputPaths.length > 1)
-        {
-            lastDirName = inputPaths[(inputPaths.length)-2].getParent().getName();
-        }
+//        String lastDirName = null;
+//        if(inputPaths != null && inputPaths.length > 1)
+//        {
+//            lastDirName = inputPaths[(inputPaths.length)-2].getParent().getName();
+//        }
         for(Path inputPath : inputPaths)
         {
             FileInputFormat.addInputPath(job, inputPath);
@@ -365,12 +376,6 @@ public class VersionMerge
        
         for(String table: tableNameSet)
         {
-//            if(table.endsWith(".dat") == false)
-//            {
-//                continue;
-//            }
-//            table = table.replaceAll("-", "");
-//            table = table.replaceAll(".dat", "");
             MultipleOutputs.addNamedOutput(job, table, SequenceFileOutputFormat.class , Text.class, BytesWritable.class);
         }
         boolean success = job.waitForCompletion(true);     
@@ -380,11 +385,55 @@ public class VersionMerge
         {
             ActionUtils.setConfigurationValue(new Path(customerDirectory).getName(), ConfigurationKeys.LAST_MERGE_TO_MVDB_DIRNAME, lastDirName);
         }
-        //hdfsFileSystem.delete(passiveDbPath, true);
-        //hdfsFileSystem.rename(tempDbPath, passiveDbPath);
-        System.exit(success ? 0 : 1);
+        if(success == false)
+        {
+            System.err.println("VersionMerge: VersionMerge Batch Job Failed. Human intervention required.");
+            System.exit(3);
+        }
+        if(hdfsFileSystem.exists(passiveDBBackupPath))
+        {
+            success = hdfsFileSystem.delete(passiveDBBackupPath, true);
+        }
+        if(success == false) 
+        {
+            System.err.println("VersionMerge: Unable to delete passive db backup" + passiveDBBackupPath.getName() + ". Human intervention required.");
+            System.exit(4);
+        }
+        
+        success = hdfsFileSystem.rename(passiveDbPath, passiveDBBackupPath);
+        if(success == false) 
+        {
+            System.err.println(String.format("VersionMerge: Unable to rename passive db path %s to %s. Human intervention required.", passiveDbPath.toString(), passiveDBBackupPath.toString() ));
+            System.exit(5);
+        }
+        
+        success = hdfsFileSystem.rename(tempDbPath, passiveDbPath);
+        if(success == false) 
+        {
+            System.err.println(String.format("VersionMerge: Unable to rename passive db path %s to %s. Human intervention required.", tempDbPath.getName(), passiveDBBackupPath.getName() ));
+            System.exit(6);
+        }
+        //Flip active and passive directory
+        ActionUtils.setConfigurationValue(customerName, ConfigurationKeys.ACTIVE_DB_DIR, passiveDBName);
+
+        System.exit(0);
     }
     
+    private static String getLastDirName(Path[] inputPaths)
+    {
+        String lastTimestampDirName = "00000000000000";     
+        for(Path path : inputPaths)
+        {
+            //
+            String timestampDirName = path.getParent().getName();
+            if(timestampDirName.matches("\\d{14}")   && timestampDirName.compareTo(lastTimestampDirName) > 0)
+            {
+                lastTimestampDirName = timestampDirName;
+            }            
+        }
+        return lastTimestampDirName;
+    }
+
     public static String getCSV(Collection collection, String regex)
     {
         StringBuffer sb = new StringBuffer();
@@ -409,9 +458,9 @@ public class VersionMerge
      * @throws IOException
      */
 
-    private static Path[] getInputPaths(FileSystem hdfsFileSystem, Path topPath, String lastMergedDirName, String lastcopiedDirName, Path passiveDbPathT) throws IOException
+    private static Path[] getInputPaths(FileSystem hdfsFileSystem, Path topPath, String lastMergedDirName, String lastcopiedDirName, Path passiveDbPath) throws IOException
     {
-        Path passiveDbPath = new Path(topPath, "db/mv1");  
+        //Path passiveDbPath = new Path(topPath, "db/mv1");  
         if(hdfsFileSystem.exists(passiveDbPath) == false)
         {
             hdfsFileSystem.mkdirs(passiveDbPath);
