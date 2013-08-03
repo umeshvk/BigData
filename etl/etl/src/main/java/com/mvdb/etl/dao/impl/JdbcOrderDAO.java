@@ -88,6 +88,19 @@ public class JdbcOrderDAO extends JdbcDaoSupport implements OrderDAO
 
         return orders;
     }
+    
+    @Override
+    public List<Long> findAllIds()
+    {
+        String sql = "SELECT order_id FROM ORDERS";
+        List<Long> orderIds = new ArrayList<Long>();
+        List<Map> rows = getJdbcTemplate().queryForList(sql);
+        for (Map row : rows)
+        {
+            orderIds.add((Long) (row.get("order_id")));
+        }
+        return orderIds;
+    }
 
     /*
      * private void findAll(String sql, Consumer consumer) {
@@ -244,6 +257,14 @@ public class JdbcOrderDAO extends JdbcDaoSupport implements OrderDAO
         getJdbcTemplate().update("update orders set note = ?, sale_code = ?, update_time = ? where order_id = ?",
                 new Object[] { order.getNote(), order.getSaleCode(), new java.sql.Timestamp(order.getUpdateTime().getTime()) , order.getOrderId() });
     }
+
+    @Override
+    public void deleteById(long orderId)
+    {
+        getJdbcTemplate().update("delete from orders where order_id = ?", new Object[] {orderId});        
+    }
+
+
 
 
 

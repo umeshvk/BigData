@@ -23,6 +23,7 @@ public class ConfigurationKeys
     public static final String LAST_COPY_TO_HDFS_DIRNAME = "last-copy-to-hdfs-dirname"; 
     public static final String LAST_MERGE_TO_MVDB_DIRNAME = "last-merge-to-mvdb-dirname"; 
     public static final String LAST_USED_END_TIME = "last-used-end-time"; 
+    public static final String SCHEMA_DESCRIPTION = "schema-description"; 
     
     
     

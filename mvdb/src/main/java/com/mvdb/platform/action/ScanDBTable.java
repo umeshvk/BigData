@@ -15,9 +15,11 @@ import org.apache.hadoop.io.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.mvdb.platform.data.MultiVersionRecord;
 import com.mvdb.etl.actions.ScanDBChanges;
 import com.mvdb.etl.data.GenericDataRecord;
+import com.mvdb.etl.data.GenericIdRecord;
+import com.mvdb.etl.data.IdRecord;
+import com.mvdb.platform.data.MultiVersionRecord;
 
 public class ScanDBTable
 {
@@ -27,7 +29,11 @@ public class ScanDBTable
      */
     public static void main(String[] args)
     {
-        ScanDBTable.scan("/home/umesh/.mvdb/etl/data/alpha/db/tmp-62103/dataorders-r-00000"); 
+        //ScanDBTable.scan("/home/umesh/.mvdb/etl/data/alpha/20030115050607/ids-orders.dat"); 
+        //ScanDBTable.scan("/home/umesh/.mvdb/etl/data/alpha/20030131050607/ids-orders.dat"); 
+        ///home/umesh/.mvdb/etl/data/alpha/20030117050607
+        ScanDBTable.scan("/home/umesh/.mvdb/etl/data/alpha/db/tmp-49728/orders-r-00000"); 
+        
     }
 
     
@@ -61,10 +67,15 @@ public class ScanDBTable
                     GenericDataRecord dr = (GenericDataRecord) object;
                     System.out.println(dr.toString());
                 }
-                if(object instanceof MultiVersionRecord)
+                else if(object instanceof MultiVersionRecord)
                 {
                     MultiVersionRecord mvr = (MultiVersionRecord) object;
                     System.out.println(mvr.toString());
+                }
+                else if(object instanceof GenericIdRecord)
+                {
+                    IdRecord idr = (IdRecord) object;
+                    System.out.println(idr.toString());
                 }
             }
 

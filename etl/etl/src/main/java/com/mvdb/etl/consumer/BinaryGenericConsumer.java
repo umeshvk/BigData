@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 
 import com.mvdb.etl.data.DataRecord;
+import com.mvdb.etl.data.IdRecord;
 
 public class BinaryGenericConsumer implements GenericConsumer
 {
@@ -64,6 +65,31 @@ public class BinaryGenericConsumer implements GenericConsumer
         }
 
     }
+    
+    @Override
+    public boolean consume(IdRecord idRecord)
+    {
+        if (done == true)
+        {
+            throw new ConsumerException("Consumer closed for output file:" + file.getAbsolutePath());
+        }
+        if (good == false)
+        {
+            throw new ConsumerException("Check log for prior error. Consumer unusable for output file:"
+                    + file.getAbsolutePath());
+        }
+
+        try
+        {            
+            oos.writeObject(idRecord);
+            return true;
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+            throw new ConsumerException("Consumer failed to consume for output file:" + file.getAbsolutePath()
+                    + ", and DataRecord:" + idRecord.toString());
+        }
+    }
 
     @Override
     public boolean flushAndClose()
@@ -88,5 +114,7 @@ public class BinaryGenericConsumer implements GenericConsumer
             throw new ConsumerException("Unable to flush for output file:" + file.getAbsolutePath(), ioe);
         }
     }
+
+
 
 }

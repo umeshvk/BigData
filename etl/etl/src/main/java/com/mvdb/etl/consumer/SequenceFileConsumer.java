@@ -11,13 +11,13 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.IOUtils;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.mvdb.etl.data.DataRecord;
+import com.mvdb.etl.data.IdRecord;
 
 public class SequenceFileConsumer implements GenericConsumer
 {
@@ -55,6 +55,38 @@ public class SequenceFileConsumer implements GenericConsumer
     }
 
 
+    @Override
+    public boolean consume(IdRecord idRecord)
+    {
+        if (done == true)
+        {
+            throw new ConsumerException("Consumer closed for output file:" + file.getAbsolutePath());
+        }
+        if (good == false)
+        {
+            throw new ConsumerException("Check log for prior error. Consumer unusable for output file:"
+                    + file.getAbsolutePath());
+        }
+
+        try
+        {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(bos);
+            oos.writeObject(idRecord);
+            oos.flush();
+            BytesWritable value = new BytesWritable(bos.toByteArray());
+            Text key = new Text(idRecord.getMvdbKeyValue());
+            writer.append(key, value);
+            return true;
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+            throw new ConsumerException("Consumer failed to consume for output file:" + file.getAbsolutePath()
+                    + ", and DataRecord:" + idRecord.toString());
+        }
+
+    }
+    
     @Override
     public boolean consume(DataRecord dataRecord)
     {

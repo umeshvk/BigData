@@ -1,8 +1,7 @@
 package com.mvdb.etl.data;
 
-import java.io.Externalizable;
 
-public interface DataRecord extends Externalizable, Comparable<DataRecord>
+public interface DataRecord extends IdRecord
 {
     Object getKeyValue();
     long getTimestampLongValue();

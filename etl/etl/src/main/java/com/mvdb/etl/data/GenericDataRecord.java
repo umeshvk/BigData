@@ -23,6 +23,8 @@ public class GenericDataRecord implements DataRecord
     Map<String, Object> dataMap;
     String mvdbKeyValue; 
     Date mvdbUpdateTime;
+    String refreshTimeStamp;
+    boolean deleted;
    
     public GenericDataRecord(Map<String, Object> dataMap, String originalKeyName, MvdbKeyMaker mvdbKeyMaker, String originalUpdateTimeColumn, MvdbUpdateTimeMaker mvdbUpdateTimeMaker)
     {
@@ -101,6 +103,8 @@ public class GenericDataRecord implements DataRecord
     {
         this.mvdbKeyValue = (String)input.readObject();
         this.mvdbUpdateTime = (Date)input.readObject();
+        this.refreshTimeStamp = (String)input.readObject();
+        this.deleted = input.readBoolean();        
         int size = input.readInt();
         dataMap = new HashMap<String, Object>();
         for (int i = 0; i < size; i++)
@@ -116,6 +120,8 @@ public class GenericDataRecord implements DataRecord
     {
         output.writeObject(mvdbKeyValue);
         output.writeObject(mvdbUpdateTime);
+        output.writeObject(refreshTimeStamp);
+        output.writeBoolean(deleted);
         output.writeInt(dataMap.size());
         Iterator<String> keysIter = dataMap.keySet().iterator();
         while (keysIter.hasNext())
@@ -140,6 +146,15 @@ public class GenericDataRecord implements DataRecord
         sb.append(" : ");
         sb.append("\"" + mvdbUpdateTime + "\"");
         sb.append(", ");
+        sb.append("\"refreshTimeStamp\"");
+        sb.append(" : ");
+        sb.append("\"" + refreshTimeStamp + "\"");        
+        sb.append(", ");
+        sb.append("\"deleted\"");
+        sb.append(" : ");
+        sb.append("\"" + deleted + "\"");        
+        sb.append(", ");
+        
         Iterator<String> keysIter = dataMap.keySet().iterator();
         while(keysIter.hasNext())
         {
@@ -177,7 +192,7 @@ public class GenericDataRecord implements DataRecord
     }
 
     @Override
-    public int compareTo(DataRecord dataRecord)
+    public int compareTo(IdRecord dataRecord)
     {
         Long local = new Long(this.getTimestampLongValue());
         Long external = new Long(dataRecord.getTimestampLongValue());        
@@ -194,5 +209,38 @@ public class GenericDataRecord implements DataRecord
         this.mvdbKeyValue = mvdbKeyValue;
     }
 
+    public String getRefreshTimeStamp()
+    {
+        return refreshTimeStamp;
+    }
 
+    public void setRefreshTimeStamp(String refreshTimeStamp)
+    {
+        this.refreshTimeStamp = refreshTimeStamp;
+    }
+
+
+    public Date getMvdbUpdateTime()
+    {
+        return mvdbUpdateTime;
+    }
+
+
+    public void setMvdbUpdateTime(Date mvdbUpdateTime)
+    {
+        this.mvdbUpdateTime = mvdbUpdateTime;
+    }
+
+
+    public boolean isDeleted()
+    {
+        return deleted;
+    }
+
+
+    public void setDeleted(boolean deleted)
+    {
+        this.deleted = deleted;
+    }
+    
 }

@@ -20,8 +20,11 @@ public class MultiVersionRecord implements Externalizable
     {
         StringBuffer sb = new StringBuffer();
         sb.append("[");
+        sb.append("{\"count\" : " + versionList.size() + "}, ");
+        String nl = System.getProperty("line.separator");
         for(GenericDataRecord gdr : versionList)
         {
+            sb.append(nl);
             sb.append(gdr);
             sb.append(",");
         }

@@ -11,6 +11,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,6 +36,8 @@ import com.mvdb.etl.data.ColumnMetadata;
 import com.mvdb.etl.data.DataHeader;
 import com.mvdb.etl.data.DataRecord;
 import com.mvdb.etl.data.GenericDataRecord;
+import com.mvdb.etl.data.GenericIdRecord;
+import com.mvdb.etl.data.IdRecord;
 import com.mvdb.etl.data.Metadata;
 
 public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
@@ -118,11 +121,54 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
 
 
     @Override
-    public DataHeader fetchAll2(File snapshotDirectory, Timestamp modifiedAfter, String objectName, final String keyName, final String updateTimeColumnName)
+    public DataHeader fetchAll2(File snapshotDirectory, Timestamp modifiedAfter, String objectName, String keyName, String updateTimeColumnName)
+    {
+        DataHeader dataHeader = new DataHeader();
+        writeUpdates(snapshotDirectory, modifiedAfter, objectName, keyName, updateTimeColumnName, dataHeader);                
+        writeDataHeader(dataHeader, objectName, snapshotDirectory);
+        writeIds(snapshotDirectory, objectName, keyName, updateTimeColumnName/*, dataHeader*/);
+        return dataHeader;
+    }
+
+
+    
+    private void writeIds(File snapshotDirectory, String objectName, final String keyName,
+            final String updateTimeColumnName/*, DataHeader dataHeader*/)
+    {
+        final String snapShotDirName = snapshotDirectory.getName();
+        //final Date refreshTimeStamp = ActionUtils.getDate(snapShotDirName);
+        File objectFile = new File(snapshotDirectory, "ids-" + objectName + ".dat");
+        final GenericConsumer genericConsumer = new SequenceFileConsumer(objectFile);
+        
+
+        String sql = "SELECT " + keyName + " FROM " + objectName;
+
+        getJdbcTemplate().query(sql, new Object[] {  }, new RowCallbackHandler() {
+
+            @Override
+            public void processRow(ResultSet row) throws SQLException
+            {
+                final Map<String, Object> dataMap = new HashMap<String, Object>();
+                ResultSetMetaData rsm = row.getMetaData();               
+                Object originalKeyValue = row.getObject(1);
+                IdRecord idRecord = new GenericIdRecord(originalKeyValue , globalMvdbKeyMaker, snapShotDirName);
+                genericConsumer.consume(idRecord);
+                //dataHeader.incrementCount();
+
+            }
+        });
+
+        genericConsumer.flushAndClose();
+        
+    }
+
+    private void writeUpdates(File snapshotDirectory, Timestamp modifiedAfter, String objectName, final String keyName, final String updateTimeColumnName, final DataHeader dataHeader)
     {
         File objectFile = new File(snapshotDirectory, "data-" + objectName + ".dat");
         final GenericConsumer genericConsumer = new SequenceFileConsumer(objectFile);
-        final DataHeader dataHeader = new DataHeader();
+        
+        final String snapShotDirName = snapshotDirectory.getName();
+        //final Date refreshTimeStamp = ActionUtils.getDate(snapShotDirName);
 
         String sql = "SELECT * FROM " + objectName + " o where o.update_time >= ?";
 
@@ -139,8 +185,9 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
                     dataMap.put(rsm.getColumnName(column), row.getObject(rsm.getColumnLabel(column)));
                 }
 
-                DataRecord dataRecord = new GenericDataRecord(dataMap, keyName , globalMvdbKeyMaker, 
+                GenericDataRecord dataRecord = new GenericDataRecord(dataMap, keyName , globalMvdbKeyMaker, 
                                 updateTimeColumnName, new GlobalMvdbUpdateTimeMaker());
+                dataRecord.setRefreshTimeStamp(snapShotDirName);
                 genericConsumer.consume(dataRecord);
                 dataHeader.incrementCount();
 
@@ -148,15 +195,8 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
         });
 
         genericConsumer.flushAndClose();
-        
-        
-
-        writeDataHeader(dataHeader, objectName, snapshotDirectory);
-        return dataHeader;
     }
 
-
-    
     @Override
     public boolean scan2(String objectName, File snapshotDirectory)
     {
@@ -246,87 +286,3 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
     
 
 }
-
-
-/*
-@Override
-public boolean scanOld(String objectName, File snapshotDirectory) throws IOException
-{
-    FileInputStream fis = null;
-    ObjectInputStream ois = null;
-    try
-    {
-        String dataFileName = "data-" + objectName + ".dat";
-        File dataFile = new File(snapshotDirectory, dataFileName);
-        fis = new FileInputStream(dataFile);
-        if (fis.available() <= 0)
-        {
-            return true;
-        }
-        ois = new ObjectInputStream(fis);
-        while (fis.available() > 0)
-        {
-            DataRecord dataRecord = new GenericDataRecord();
-            dataRecord = (GenericDataRecord) ois.readObject();
-            System.out.println(dataRecord);
-        }
-
-    } catch (Throwable t)
-    {
-        t.printStackTrace();
-        return false;
-    } finally
-    {
-        if (fis != null)
-        {
-            fis.close();
-        }
-        if (ois != null)
-        {
-            ois.close();
-        }
-    }
-
-    return true;
-
-}
-
-*/
-
-/*
-@Override
-public DataHeader fetchAllOld(File snapshotDirectory, Timestamp modifiedAfter, String objectName)
-{
-    final GenericConsumer genericConsumer = new BinaryGenericConsumer(new File(snapshotDirectory, "data-"
-            + objectName + ".dat"));
-    final DataHeader dataHeader = new DataHeader();
-
-    String sql = "SELECT * FROM " + objectName + " o where o.update_time >= ?";
-
-    getJdbcTemplate().query(sql, new Object[] { modifiedAfter }, new RowCallbackHandler() {
-
-        @Override
-        public void processRow(ResultSet row) throws SQLException
-        {
-            final Map<String, Object> dataMap = new HashMap<String, Object>();
-            ResultSetMetaData rsm = row.getMetaData();
-            int columnCount = rsm.getColumnCount();
-            for (int column = 1; column < (columnCount + 1); column++)
-            {
-                dataMap.put(rsm.getColumnName(column), row.getObject(rsm.getColumnLabel(column)));
-            }
-
-            DataRecord dataRecord = new GenericDataRecord(dataMap);
-            genericConsumer.consume(dataRecord);
-            dataHeader.incrementCount();
-
-        }
-    });
-
-    genericConsumer.flushAndClose();
-
-    writeDataHeader(dataHeader, objectName, snapshotDirectory);
-    return dataHeader;
-
-}
-*/

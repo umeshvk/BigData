@@ -9,7 +9,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Collection;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.Properties;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -45,7 +47,23 @@ public class ActionUtils
         
     }
     
-
+    
+    public static String getCSV(Collection collection, String regex)
+    {
+        StringBuffer sb = new StringBuffer();
+        Iterator iter  = collection.iterator();
+        while(iter.hasNext())
+        {
+            String str = iter.next().toString(); 
+            if(str.matches(regex)) { 
+                sb.append(iter.next()).append(",");
+            }
+        }
+        if(sb.length() > 0) { 
+            sb.setLength(sb.length()-1);
+        }
+        return sb.toString();
+    }
     
     public static String getConfigurationValue(String customerName, String propertyName)
     {

@@ -6,7 +6,6 @@ import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
-import java.util.Properties;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -20,7 +19,6 @@ import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import com.mvdb.etl.consumer.OrderJsonFileConsumer;
 import com.mvdb.etl.dao.ConfigurationDAO;
@@ -96,16 +94,15 @@ public class ExtractDBChanges  implements IAction
             System.exit(1);
             return;
         }
-        long currentTime = new Date().getTime();
-        Configuration lastRefreshTimeConf = configurationDAO.find(customerName, "last-refresh-time");
-        Configuration schemaDescriptionConf = configurationDAO.find(customerName, "schema-description");
-        long lastRefreshTime = Long.parseLong(lastRefreshTimeConf.getValue());
+        //long currentTime = new Date().getTime();
+        long lastRefreshTime =  ActionUtils.getConfigurationValueLong(customerName, ConfigurationKeys.LAST_REFRESH_TIME);//Long.parseLong(lastRefreshTimeConf.getValue());
+        String schemaDescriptionValue = ActionUtils.getConfigurationValue(customerName, ConfigurationKeys.SCHEMA_DESCRIPTION);
         OrderJsonFileConsumer orderJsonFileConsumer = new OrderJsonFileConsumer(snapshotDirectory);
         Map<String, ColumnMetadata> metadataMap = orderDAO.findMetadata();
         //write file schema-orders.dat in snapshotDirectory
         genericDAO.fetchMetadata("orders", snapshotDirectory);
         //writes files: header-orders.dat, data-orders.dat in snapshotDirectory
-        JSONObject json = new JSONObject(schemaDescriptionConf.getValue());
+        JSONObject json = new JSONObject(schemaDescriptionValue);
         JSONArray rootArray = json.getJSONArray("root");
         int length = rootArray.length();
         for(int i=0;i<length;i++)
@@ -166,11 +163,14 @@ public class ExtractDBChanges  implements IAction
             logger.error("Objects copied to hdfs. But zipping of snapshot directory<" + snapshotDirectory.getAbsolutePath() +  "> to  <" + targetZip + ">failed. Fix the problem and redo extract.", e);
             System.exit(1);
         }
-                
-        //orderDAO.findAll(new Timestamp(lastRefreshTime), orderJsonFileConsumer);
+
+        /**
+        //last-refresh-time is now forced in ModifyCustomerData so 1 ms before start date of update-times for modifications. 
+        //That will ensure that all the modifications get picked up on extract.
         Configuration updateRefreshTimeConf = new Configuration(customerName, "last-refresh-time",
                 String.valueOf(currentTime));
         configurationDAO.update(updateRefreshTimeConf, String.valueOf(lastRefreshTimeConf.getValue()));
+        **/
         ActionUtils.createMarkerFile("~/.mvdb/status.ExtractDBChanges.complete", true);
 
     }

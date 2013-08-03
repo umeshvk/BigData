@@ -36,4 +36,8 @@ public interface OrderDAO
 
     public void update(Order order);
 
+    public List<Long> findAllIds();
+
+    public void deleteById(long orderId);
+
 }

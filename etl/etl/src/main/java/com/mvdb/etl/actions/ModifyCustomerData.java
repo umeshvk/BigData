@@ -1,6 +1,7 @@
 package com.mvdb.etl.actions;
 
 import java.util.Date;
+import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -10,7 +11,6 @@ import org.apache.commons.cli.PosixParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import com.mvdb.etl.dao.OrderDAO;
 import com.mvdb.etl.model.Order;
@@ -20,6 +20,24 @@ public class ModifyCustomerData  implements IAction
 {
     private static Logger logger = LoggerFactory.getLogger(ModifyCustomerData.class);
 
+    enum Action{
+        
+        DELETE("Delete"),
+        UNDELETE("Undelete");
+        
+        String name; 
+        private Action(String name)
+        {
+            this.name = name; 
+        }
+        
+        public String getName()
+        {
+            return name;            
+        }
+        
+    }
+    
     public static void main(String[] args)
     {
         
@@ -38,6 +56,8 @@ public class ModifyCustomerData  implements IAction
         logger.trace("trace");
         
         String customerName = null; 
+        String modifyAction = null;
+//        String modifyCountStr = null;
         //Date startDate  = null;
         //Date endDate  = null;
         final CommandLineParser cmdLinePosixParser = new PosixParser();
@@ -46,20 +66,23 @@ public class ModifyCustomerData  implements IAction
         try
         {
             commandLine = cmdLinePosixParser.parse(posixOptions, args);
-//            if (commandLine.hasOption("startDate"))
-//            {
-//                String startDateStr = commandLine.getOptionValue("startDate");
-//                startDate = ActionUtils.getDate(startDateStr);
-//            }
-//            if (commandLine.hasOption("endDate"))
-//            {
-//                String endDateStr = commandLine.getOptionValue("endDate");
-//                endDate = ActionUtils.getDate(endDateStr);
-//            }
             if (commandLine.hasOption("customerName"))
             {
                 customerName = commandLine.getOptionValue("customerName");
             }
+            if (commandLine.hasOption("modifyAction"))
+            {
+                modifyAction = commandLine.getOptionValue("modifyAction");
+            }
+//            if (commandLine.hasOption("modifyCount"))
+//            {
+//                modifyCountStr = commandLine.getOptionValue("modifyCount");
+//            }
+//            if(modifyCountStr == null)
+//            {
+//                modifyCountStr = "1"; 
+//            }
+            
         } catch (ParseException parseException) // checked exception
         {
             System.err
@@ -72,25 +95,16 @@ public class ModifyCustomerData  implements IAction
             System.exit(1);
         }
         
-//        if (startDate == null)
-//        {
-//            System.err.println("startDate has not been specified with the correct format YYYYMMddHHmmss.  Aborting...");
-//            System.exit(1);
-//        }
-//        
-//        if (endDate == null)
-//        {
-//            System.err.println("endDate has not been specified with the correct format YYYYMMddHHmmss.  Aborting...");
-//            System.exit(1);
-//        }
-//        
-//        if (endDate.after(startDate) == false)
-//        {
-//            System.err.println("endDate must be after startDate.  Aborting...");
-//            System.exit(1);
-//        }
+        if (modifyAction != null)
+        {
+            if(Action.DELETE.getName().equals(modifyAction) == false && Action.UNDELETE.getName().equals(modifyAction) == false)
+            {
+                System.err.println("modifyAction must be <Delete> or <Undelete>.  Aborting...");
+                System.exit(1); 
+            } 
+        }
         
-        
+           
         
         ApplicationContext context = Top.getContext();
 
@@ -101,39 +115,108 @@ public class ModifyCustomerData  implements IAction
         long totalOrders = orderDAO.findTotalOrders();
         
         long modifyCount = (long)(totalOrders * 0.1);
+        if(modifyCount == 0L)
+        {
+            modifyCount = 1L;
+        }
        
 
-        String lastUsedEndTimeStr = ActionUtils.getConfigurationValue(customerName, ConfigurationKeys.LAST_USED_END_TIME);
-        long lastUsedEndTime = Long.parseLong(lastUsedEndTimeStr);
+        long lastUsedEndTime = ActionUtils.getConfigurationValueLong(customerName, ConfigurationKeys.LAST_USED_END_TIME);
         Date startDate1 = new Date();
         startDate1.setTime(lastUsedEndTime + 1000 * 60 * 60 * 24 * 1);
         Date endDate1 = new Date(startDate1.getTime() + 1000 * 60 * 60 * 24 * 1);
+        //We force this value so that all the changes made up to  startDate1 will be picked up in the ExtractDBChanges stage.
+        ActionUtils.setConfigurationValue(customerName, ConfigurationKeys.LAST_REFRESH_TIME, String.valueOf(startDate1.getTime()-1));
         
-        for(int i=0;i<modifyCount;i++)
+        List<Long> orderIdList = getRandomOrderIds(orderDAO, modifyCount);
+        Long modifiedId = -1L; 
+        for(int i=0;i<orderIdList.size();i++)
         {
-             Date updateDate = RandomUtil.getRandomDateInRange(startDate1, endDate1);
-             long orderId = (long)Math.floor((Math.random() * maxId)) + 1L;
-             logger.info("Modify Id " + orderId + " in orders");
-             Order theOrder = orderDAO.findByOrderId(orderId);
-//             System.out.println("theOrder : " + theOrder);
-             theOrder.setNote(RandomUtil.getRandomString(4));
-             theOrder.setUpdateTime(updateDate);
-             theOrder.setSaleCode(RandomUtil.getRandomInt());
-             orderDAO.update(theOrder);
-//             System.out.println("theOrder Modified: " + theOrder);
-
+            modifiedId = orderIdList.get(i);
+            modify(orderDAO, modifiedId, startDate1,  endDate1);
         }
+        
+        //orderIdList = getRandomOrderIds(orderDAO, 1);
+        if(Action.DELETE.getName().equals(modifyAction))
+        {
+            handleDelete(orderDAO, 1L);
+        }
+        else if(Action.UNDELETE.getName().equals(modifyAction))
+        {
+            handleUndelete(orderDAO, 1L, modifiedId);
+        }
+        
+        
         ActionUtils.setConfigurationValue(customerName, ConfigurationKeys.LAST_USED_END_TIME, String.valueOf(endDate1.getTime()));
         logger.info("Modified " + modifyCount + " orders");
         ActionUtils.createMarkerFile("~/.mvdb/status.ModifyCustomerData.complete", true);
     }
     
+    private static List<Long> getRandomOrderIds(OrderDAO orderDAO, long count)
+    {
+        List<Long> idList = orderDAO.findAllIds();
+        //In some cases we may hit the same orderId twice. But it is not critical right now.  
+        for(long i=0;i<count;i++)
+        {
+            int orderIdIndex = (int)Math.floor((Math.random() * idList.size()));        
+            Long orderId = idList.get(orderIdIndex);
+            idList.add(orderId);
+        }
+        
+        return idList;
+    }
+    
+//    / 
+    private static void modify(OrderDAO orderDAO, long orderId, Date startDate1, Date endDate1)
+    {
+           
+        logger.info("Modify Id " + orderId + " in orders");
+        
+        Date updateDate = RandomUtil.getRandomDateInRange(startDate1, endDate1); 
+        Order theOrder = orderDAO.findByOrderId(orderId);
+        theOrder.setNote(RandomUtil.getRandomString(4));
+        theOrder.setUpdateTime(updateDate);
+        theOrder.setSaleCode(RandomUtil.getRandomInt());
+        orderDAO.update(theOrder);
+    }
+
+    private static void handleUndelete(OrderDAO orderDAO, long orderId, long referenceOrderId)
+    {
+        if(orderDAO.findByOrderId(orderId) != null) { 
+            logger.info("Cannot undelete existing Id " + orderId + " in orders");
+            return;
+        }
+        Order referenceOrder = orderDAO.findByOrderId(referenceOrderId);
+        if(referenceOrder == null) { 
+            logger.info("Cannot undelete using non-existent Id " + orderId + " in orders");
+            return;
+        }
+        Date updateTime = referenceOrder.getUpdateTime(); 
+        Date createTime = referenceOrder.getCreateTime();
+        Order undeleteOrder = new Order();
+        undeleteOrder.setOrderId(orderId);
+        undeleteOrder.setNote(RandomUtil.getRandomString(4));
+        undeleteOrder.setSaleCode(RandomUtil.getRandomInt());
+        undeleteOrder.setUpdateTime(updateTime);
+        undeleteOrder.setCreateTime(createTime);
+        orderDAO.insert(undeleteOrder);        
+    }
+
+    private static void handleDelete(OrderDAO orderDAO, long orderId)
+    {    
+        if(orderDAO.findByOrderId(orderId) != null) { 
+            logger.info("Cannot delete non-existent Id " + orderId + " in orders");
+            return;
+        }
+        orderDAO.deleteById(orderId);
+    }
+
     public static Options constructPosixOptions()
     {
         final Options posixOptions = new Options();
         posixOptions.addOption("customerName", true, "Customer Name");
-//        posixOptions.addOption("startDate", true, "Start Date");
-//        posixOptions.addOption("endDate", true, "End Date");
+        posixOptions.addOption("modifyAction", true, "Modify Action");
+//      posixOptions.addOption("modifyCount", true, "Modify Count");
 
         return posixOptions;
     }
