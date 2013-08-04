@@ -1,7 +1,7 @@
 1.(Done) 
 Implement the delete functionality. 
 
-2.(Aug 3,4)
+2.(Done)
 test merge flow.
 Add these three steps to the mertge flow:
 delete passive mvdb folder
@@ -10,6 +10,7 @@ swap passive and active mvdb folder
 
 3.(Done)
 Scan all the versions for all the records of all the tables using Scanner. 
+
 4.(Aug 5,6,7)
 Create a Time slice. 
 Scan the time slice. 

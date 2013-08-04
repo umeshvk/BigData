@@ -268,7 +268,7 @@ public class VersionMerge
             oos.writeObject(mvr);
             oos.flush();
             BytesWritable bwOut = new BytesWritable(bos.toByteArray());            
-            context.write(new Text(mergeKey.getId()), bwOut);
+            //context.write(new Text(mergeKey.getId()), bwOut);
             mos.write(mergeKey.getTable(), new Text(mergeKey.getId()), bwOut);
         }
     }

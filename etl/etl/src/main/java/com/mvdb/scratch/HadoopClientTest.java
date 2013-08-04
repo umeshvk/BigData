@@ -19,15 +19,19 @@ public class HadoopClientTest
      */
     public static void main(String[] args)
     {
-        String dataFileName = "/tmp/df.txt";
+        
+        //String dataFileName = "/tmp/df.txt";
         String sequenceFileName = "/tmp/seq.dat";
         String hadoopLocalFS = "file:///";
+        /*
         createDataFile(dataFileName);
         testWriteSequenceFile(dataFileName, sequenceFileName, hadoopLocalFS);
         testReadSequenceFile(sequenceFileName, hadoopLocalFS);
-
+        */
+        testWriteSequenceFile(new int[][] {{1,2}, {3,4}}, sequenceFileName, hadoopLocalFS);
     }
 
+    
     public static void testReadSequenceFile(String sequenceFileName, String hadoopLocalFS)
     {
         try
@@ -68,6 +72,18 @@ public class HadoopClientTest
         {
             File dataFile = new File(dataFileName);
             HadoopClient.writeToSequenceFile(dataFile, sequenceFileName, hadoopLocalFS);
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+
+    }
+    
+    public static void testWriteSequenceFile(int[][] values, String sequenceFileName, String hadoopLocalFS)
+    {
+        try
+        {
+            HadoopClient.writeToSequenceFile(values, sequenceFileName, hadoopLocalFS);
         } catch (IOException e)
         {
             e.printStackTrace();
