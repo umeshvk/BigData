@@ -1,8 +1,16 @@
-package com.mvdb.platform.scratch.action;
+package com.mvdb.platform.action;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import org.apache.hadoop.conf.Configuration;
@@ -18,13 +26,16 @@ import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoUtils;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MySerde implements SerDe
+import com.mvdb.etl.data.GenericDataRecord;
+
+public class TimeSliceSerde implements SerDe
 {
-    private static Logger logger = LoggerFactory.getLogger(MySerde.class);
+    private static Logger logger = LoggerFactory.getLogger(TimeSliceSerde.class);
 
     int                   numColumns;
     StructObjectInspector rowOI;
@@ -39,6 +50,7 @@ public class MySerde implements SerDe
 
     List<String>          columnNames;
     List<TypeInfo>        columnTypes;
+    Map<String, Integer>  columnPosition = new HashMap<String, Integer>();
 
     /**
      * @param args
@@ -53,19 +65,90 @@ public class MySerde implements SerDe
     public Object deserialize(Writable blob) throws SerDeException
     {
         System.out.println("deserialize");
-        BytesWritable data = (BytesWritable) blob;
+        BytesWritable bw = (BytesWritable) blob;
         // inBarrStr.reset(data.getBytes(), 0, data.getLength());
-
         for (int i = 0; i < columnNames.size(); i++)
         {
             // row.set(i, deserializeField(tbIn, columnTypes.get(i),
             // row.get(i)));
-            row.set(i, new IntWritable(1));
+            row.set(i, null);
         }
+        try
+        {
+            byte[] bytes = bw.getBytes();
+            ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+            ObjectInputStream ois = new ObjectInputStream(bis);
+            GenericDataRecord record = (GenericDataRecord)ois.readObject();
+            System.out.println(record);
+            Map<String, Object> dataMap = record.getDataMap();
+            Iterator<String> keySetIter = dataMap.keySet().iterator();
+            while(keySetIter.hasNext())
+            {
+                String key = keySetIter.next();
+                Integer pos = columnPosition.get(key);
+                if(pos == null)
+                {
+                    //Table does not care about this data.
+                    continue;
+                }
+                Object tv = translate(dataMap.get(key));
+                System.out.println(String.format(">>>>>%s %d %s", key, pos, tv));
+                
+                row.set(pos, tv);
+            }
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+        catch (ClassNotFoundException e)
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+/*
+ * mvdb_id string, sale_code int, note string, create_time date, update_time date
+ */
+//        for (int i = 0; i < columnNames.size(); i++)
+//        {
+//            // row.set(i, deserializeField(tbIn, columnTypes.get(i),
+//            // row.get(i)));
+//            row.set(i, new IntWritable(1));
+//        }
 
         return row;
     }
 
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private Object translate(Object value)
+    {
+        Object newValue = null; 
+        System.out.println("Translation Input:" + value); 
+        if(value instanceof java.lang.Integer)
+        {
+            newValue = new IntWritable((Integer)value);
+        }
+        else if(value instanceof java.lang.Long)
+        {
+            newValue = new IntWritable(((Long)value).intValue());
+        }
+        else if(value instanceof java.util.Date)
+        {
+            String dateString = sdf.format((Date)value);
+            newValue = new Text(dateString);
+        }
+        else if(value instanceof java.lang.String)
+        {
+            newValue = new Text(value.toString());
+        } else 
+        {
+            newValue = "test"; 
+        }
+        System.out.println("Translation Result:" + newValue);          
+        return newValue;
+        
+        
+    }
+    
     @Override
     public ObjectInspector getObjectInspector() throws SerDeException
     {
@@ -81,7 +164,8 @@ public class MySerde implements SerDe
     @Override
     public void initialize(Configuration conf, Properties tbl) throws SerDeException
     {
-        System.out.println("initialize");
+        Object confVal = conf.get("aaaa");
+        System.out.println("initialize (confVal)" + confVal);
         serializeBytesWritable = new BytesWritable();
         // barrStr = new NonSyncDataOutputBuffer();
         // tbOut = new TypedBytesWritableOutput(barrStr);
@@ -94,6 +178,10 @@ public class MySerde implements SerDe
         String columnTypeProperty = tbl.getProperty(serdeConstants.LIST_COLUMN_TYPES);
 
         columnNames = Arrays.asList(columnNameProperty.split(","));
+        for(int i=0;i<columnNames.size();i++)
+        {
+            columnPosition.put(columnNames.get(i), i);
+        }
         columnTypes = null;
         if (columnTypeProperty.length() == 0)
         {

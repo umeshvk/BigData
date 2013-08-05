@@ -160,6 +160,8 @@ public class GenericDataRecord implements DataRecord
         {
             String key = keysIter.next();        
             Object value = dataMap.get(key);
+            System.out.println("" + key);
+            System.out.println("" + value.getClass().getCanonicalName());
             
             sb.append("\"");
             sb.append(key);
