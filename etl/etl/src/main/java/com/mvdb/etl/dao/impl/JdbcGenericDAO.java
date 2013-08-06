@@ -65,6 +65,48 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
     }
 
     @Override
+    public void testMetaData(String objectName)
+    {
+        final Metadata metadata = new Metadata();
+        metadata.setTableName(objectName);
+        
+        String sql = "SELECT a.attname, t.typname" + 
+        " FROM pg_class c, pg_attribute a, pg_type t" +  
+        " WHERE c.relname = '" + objectName +  "'" + 
+        " AND a.attnum >= 0" + 
+        " AND a.attrelid = c.oid" + 
+        " AND a.atttypid = t.oid"; 
+        //String sql1 = "describe " + objectName;
+        final Map<String, ColumnMetadata> metaDataMap = new HashMap<String, ColumnMetadata>();
+        metadata.setColumnMetadataMap(metaDataMap);
+        metadata.setTableName(objectName);
+
+        getJdbcTemplate().query(sql, new RowCallbackHandler() {
+
+            @Override
+            public void processRow(ResultSet row) throws SQLException
+            {
+
+                    ColumnMetadata columnMetadata = new ColumnMetadata();
+                    System.out.println("name:" + row.getString(1));
+                    columnMetadata.setColumnLabel(row.getString(1));
+                    columnMetadata.setColumnName(row.getString(1));
+                    //columnMetadata.setColumnType(row.getString(1));
+                    columnMetadata.setColumnTypeName(row.getString(2)); 
+                    
+                    metaDataMap.put(columnMetadata.getColumnName(), columnMetadata);
+//                    while(row.next())
+//                    {
+//                }
+                
+
+            }
+        });
+        
+        
+    }
+    
+    @Override
     public void fetchMetadata(String objectName, File snapshotDirectory)
     {
         final Metadata metadata = new Metadata();
@@ -283,6 +325,8 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
         }
         return null;
     }
+
+
     
 
 }

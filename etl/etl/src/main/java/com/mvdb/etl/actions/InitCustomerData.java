@@ -42,8 +42,8 @@ public class InitCustomerData  implements IAction
         Date startDate  = null;
         Date endDate  = null;
         String customerName= null; 
-        int batchCountF = 0;
-        int batchSizeF = 0;
+        int batchCount = 0;
+        int batchSize = 0;
         final CommandLineParser cmdLinePosixParser = new PosixParser();
         final Options posixOptions = constructPosixOptions();
         CommandLine commandLine;
@@ -57,12 +57,12 @@ public class InitCustomerData  implements IAction
             if (commandLine.hasOption("batchSize"))
             {
                 String batchSizeStr = commandLine.getOptionValue("batchSize");
-                batchSizeF = Integer.parseInt(batchSizeStr);
+                batchSize = Integer.parseInt(batchSizeStr);
             }
             if (commandLine.hasOption("batchCount"))
             {
                 String batchCountStr = commandLine.getOptionValue("batchCount");
-                batchCountF = Integer.parseInt(batchCountStr);
+                batchCount = Integer.parseInt(batchCountStr);
             }
             if (commandLine.hasOption("startDate"))
             {
@@ -99,17 +99,23 @@ public class InitCustomerData  implements IAction
             System.exit(1);
         }
         
+        initCustomerData(customerName, batchCount, batchSize, startDate, endDate);
+        
+        ActionUtils.createMarkerFile("~/.mvdb/status.InitCustomerData.complete");
 
-        // if you have time,
-        // it's better to create an unit test rather than testing like this :)
+    }
 
+    private static void initCustomerData(String customerName, int batchCount, int batchSize, Date startDate,
+            Date endDate)
+    {
+       
         ApplicationContext context = Top.getContext();
 
         
         final OrderDAO orderDAO = (OrderDAO) context.getBean("orderDAO");        
         final ConfigurationDAO configurationDAO = (ConfigurationDAO) context.getBean("configurationDAO");
 
-        initData(orderDAO, batchCountF, batchSizeF, startDate, endDate);
+        initData(orderDAO, batchCount, batchSize, startDate, endDate);
         initConfiguration(configurationDAO, customerName, endDate);
         
         int total = orderDAO.findTotalOrders();
@@ -117,10 +123,9 @@ public class InitCustomerData  implements IAction
 
         long max = orderDAO.findMaxId();
         System.out.println("maxid : " + max);
-        
-        ActionUtils.createMarkerFile("~/.mvdb/status.InitCustomerData.complete");
-
     }
+
+
 
     private static void initConfiguration(ConfigurationDAO configurationDAO, String customerName, Date endDate)
     {

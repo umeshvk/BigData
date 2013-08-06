@@ -43,6 +43,19 @@ public class GenericDataRecord implements DataRecord
     }
     
 
+    public void merge(GenericDataRecord other)
+    {
+        Map<String, Object> otherDataMap = other.getDataMap();
+        Iterator<String> keysIter = otherDataMap.keySet().iterator();
+        while(keysIter.hasNext())
+        {
+            String key = keysIter.next();
+            Object value = otherDataMap.get(key);
+            System.out.println("Override Values:" + "key:" + key + ", value:" + value);
+            dataMap.put(key, value);
+        }
+    }
+    
     @Override
     public int hashCode()
     {
@@ -160,8 +173,8 @@ public class GenericDataRecord implements DataRecord
         {
             String key = keysIter.next();        
             Object value = dataMap.get(key);
-            System.out.println("" + key);
-            System.out.println("" + value.getClass().getCanonicalName());
+//            System.out.println("" + key);
+//            System.out.println("" + value.getClass().getCanonicalName());
             
             sb.append("\"");
             sb.append(key);

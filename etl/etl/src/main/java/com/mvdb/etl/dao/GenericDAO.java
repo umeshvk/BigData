@@ -11,6 +11,7 @@ import com.mvdb.etl.data.Metadata;
 
 public interface GenericDAO
 {
+    void testMetaData(String objectName);
     void fetchMetadata(String objectName, File snapshotDirectory);
     //DataHeader fetchAllOld(File snapshotDirectory, Timestamp modifiedAfter, String objectName);
     //boolean scan(File file, int count);

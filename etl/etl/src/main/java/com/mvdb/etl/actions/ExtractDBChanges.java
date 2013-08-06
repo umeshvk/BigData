@@ -79,6 +79,22 @@ public class ExtractDBChanges  implements IAction
 
         
         
+        extractDbchanges(customerName);
+        /**
+        //last-refresh-time is now forced in ModifyCustomerData so 1 ms before start date of update-times for modifications. 
+        //That will ensure that all the modifications get picked up on extract.
+        Configuration updateRefreshTimeConf = new Configuration(customerName, "last-refresh-time",
+                String.valueOf(currentTime));
+        configurationDAO.update(updateRefreshTimeConf, String.valueOf(lastRefreshTimeConf.getValue()));
+        **/
+        ActionUtils.createMarkerFile("~/.mvdb/status.ExtractDBChanges.complete", true);
+
+    }
+
+
+
+    private static void extractDbchanges(String customerName) throws JSONException
+    {
         ApplicationContext context = Top.getContext();
         
         final OrderDAO orderDAO = (OrderDAO) context.getBean("orderDAO");
@@ -94,6 +110,8 @@ public class ExtractDBChanges  implements IAction
             System.exit(1);
             return;
         }
+        
+        //genericDAO.testMetaData("orders");
         //long currentTime = new Date().getTime();
         long lastRefreshTime =  ActionUtils.getConfigurationValueLong(customerName, ConfigurationKeys.LAST_REFRESH_TIME);//Long.parseLong(lastRefreshTimeConf.getValue());
         String schemaDescriptionValue = ActionUtils.getConfigurationValue(customerName, ConfigurationKeys.SCHEMA_DESCRIPTION);
@@ -164,15 +182,7 @@ public class ExtractDBChanges  implements IAction
             System.exit(1);
         }
 
-        /**
-        //last-refresh-time is now forced in ModifyCustomerData so 1 ms before start date of update-times for modifications. 
-        //That will ensure that all the modifications get picked up on extract.
-        Configuration updateRefreshTimeConf = new Configuration(customerName, "last-refresh-time",
-                String.valueOf(currentTime));
-        configurationDAO.update(updateRefreshTimeConf, String.valueOf(lastRefreshTimeConf.getValue()));
-        **/
-        ActionUtils.createMarkerFile("~/.mvdb/status.ExtractDBChanges.complete", true);
-
+        
     }
 
 

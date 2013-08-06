@@ -1,5 +1,6 @@
 package com.mvdb.etl.actions;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -105,7 +106,13 @@ public class ModifyCustomerData  implements IAction
         }
         
            
+        modifyCustomerData(customerName, modifyAction);
         
+        ActionUtils.createMarkerFile("~/.mvdb/status.ModifyCustomerData.complete", true);
+    }
+    
+    private static void modifyCustomerData(String customerName, String modifyAction)
+    {
         ApplicationContext context = Top.getContext();
 
         final OrderDAO orderDAO = (OrderDAO) context.getBean("orderDAO");
@@ -149,21 +156,21 @@ public class ModifyCustomerData  implements IAction
         
         ActionUtils.setConfigurationValue(customerName, ConfigurationKeys.LAST_USED_END_TIME, String.valueOf(endDate1.getTime()));
         logger.info("Modified " + modifyCount + " orders");
-        ActionUtils.createMarkerFile("~/.mvdb/status.ModifyCustomerData.complete", true);
     }
-    
+
     private static List<Long> getRandomOrderIds(OrderDAO orderDAO, long count)
     {
         List<Long> idList = orderDAO.findAllIds();
+        List<Long> retList = new ArrayList<Long>();
         //In some cases we may hit the same orderId twice. But it is not critical right now.  
         for(long i=0;i<count;i++)
         {
             int orderIdIndex = (int)Math.floor((Math.random() * idList.size()));        
             Long orderId = idList.get(orderIdIndex);
-            idList.add(orderId);
+            retList.add(orderId);
         }
         
-        return idList;
+        return retList;
     }
     
 //    / 

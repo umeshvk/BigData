@@ -11,13 +11,15 @@ swap passive and active mvdb folder
 3.(Done)
 Scan all the versions for all the records of all the tables using Scanner. 
 
-4.(Aug 5,6,7)
+4.(Done)
 Create a Time slice. 
 Scan the time slice. 
 Compare visually the scan of time slice to the scan of multi version record to see if the slice captures records and reflects the correct data.
 
 5.(Aug 8)
 Run queries on slice. 
+Write Hive JDBC Client.
+Automate table creation based on struct_tablename.dat file
 
 6.(Aug 9,10,11)
 Store a new schema if there are changes from previous schema. 

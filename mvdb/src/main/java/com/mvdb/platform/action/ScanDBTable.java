@@ -32,7 +32,8 @@ public class ScanDBTable
         //ScanDBTable.scan("/home/umesh/.mvdb/etl/data/alpha/20030115050607/ids-orders.dat"); 
         //ScanDBTable.scan("/home/umesh/.mvdb/etl/data/alpha/20030131050607/ids-orders.dat"); 
         ///home/umesh/.mvdb/etl/data/alpha/20030117050607
-        ScanDBTable.scan("/home/umesh/.mvdb/etl/data/alpha/db/tmp-49728/orders-r-00000"); 
+        //ScanDBTable.scan("/home/umesh/.mvdb/etl/data/alpha/db/tmp-49728/orders-r-00000"); 
+        ScanDBTable.scan("/home/umesh/ordersmv.dat"); 
         
     }
 

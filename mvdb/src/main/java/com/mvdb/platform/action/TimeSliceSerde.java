@@ -3,6 +3,7 @@ package com.mvdb.platform.action;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.mvdb.etl.data.GenericDataRecord;
+import com.mvdb.platform.data.MultiVersionRecord;
 
 public class TimeSliceSerde implements SerDe
 {
@@ -51,7 +53,10 @@ public class TimeSliceSerde implements SerDe
     List<String>          columnNames;
     List<TypeInfo>        columnTypes;
     Map<String, Integer>  columnPosition = new HashMap<String, Integer>();
-
+    
+    private static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    
+    Date sliceDate = null;
     /**
      * @param args
      */
@@ -78,9 +83,28 @@ public class TimeSliceSerde implements SerDe
             byte[] bytes = bw.getBytes();
             ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
             ObjectInputStream ois = new ObjectInputStream(bis);
-            GenericDataRecord record = (GenericDataRecord)ois.readObject();
-            System.out.println(record);
-            Map<String, Object> dataMap = record.getDataMap();
+            MultiVersionRecord mv = (MultiVersionRecord)ois.readObject();
+            Date dateSlice = sliceDate != null ? sliceDate : new Date();             
+            System.out.println("dateSlice:" + dateSlice);
+            GenericDataRecord record = null; 
+            GenericDataRecord result = mv.getVersion(mv.getVersionCount()-1);
+            for(int i = mv.getVersionCount()-2;i>=0;i--)
+            {
+                if(result.getTimestampLongValue() <= dateSlice.getTime())
+                {
+                    break;
+                }
+                System.out.println("result before merge:" + result.toString());
+                record = mv.getVersion(i);
+                System.out.println("record to merge:" + record.toString());
+                result.merge(record);
+                System.out.println("result after merge:" + result.toString());
+
+            }
+            System.out.println("result final:" + result.toString());
+            
+            
+            Map<String, Object> dataMap = result.getDataMap();
             Iterator<String> keySetIter = dataMap.keySet().iterator();
             while(keySetIter.hasNext())
             {
@@ -92,7 +116,7 @@ public class TimeSliceSerde implements SerDe
                     continue;
                 }
                 Object tv = translate(dataMap.get(key));
-                System.out.println(String.format(">>>>>%s %d %s", key, pos, tv));
+                //System.out.println(String.format(">>>>>%s %d %s", key, pos, tv));
                 
                 row.set(pos, tv);
             }
@@ -118,11 +142,11 @@ public class TimeSliceSerde implements SerDe
         return row;
     }
 
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    
     private Object translate(Object value)
     {
         Object newValue = null; 
-        System.out.println("Translation Input:" + value); 
+        //System.out.println("Translation Input:" + value); 
         if(value instanceof java.lang.Integer)
         {
             newValue = new IntWritable((Integer)value);
@@ -143,7 +167,7 @@ public class TimeSliceSerde implements SerDe
         {
             newValue = "test"; 
         }
-        System.out.println("Translation Result:" + newValue);          
+        //System.out.println("Translation Result:" + newValue);          
         return newValue;
         
         
@@ -164,8 +188,21 @@ public class TimeSliceSerde implements SerDe
     @Override
     public void initialize(Configuration conf, Properties tbl) throws SerDeException
     {
-        Object confVal = conf.get("aaaa");
-        System.out.println("initialize (confVal)" + confVal);
+        System.out.println("initialize");
+        Object sliceDateStr = conf.get("sliceDate");
+        
+        try
+        {
+            if(sliceDateStr != null)
+            {
+                sliceDate = sdf.parse((String) sliceDateStr);
+            }
+        } catch (ParseException e)
+        {
+            e.printStackTrace();
+        }
+        System.out.println("sliceDate=" + sliceDate);
+        
         serializeBytesWritable = new BytesWritable();
         // barrStr = new NonSyncDataOutputBuffer();
         // tbOut = new TypedBytesWritableOutput(barrStr);

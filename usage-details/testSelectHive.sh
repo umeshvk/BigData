@@ -1,3 +1,3 @@
 #!/bin/sh
 
-hive -f test.hive 
+hive -f test.select.hive 

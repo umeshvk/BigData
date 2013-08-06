@@ -32,12 +32,18 @@ public class InitDB implements IAction
         
         ActionUtils.loggerTest(logger);
         
+        initDB();
+
+        ActionUtils.createMarkerFile("~/.mvdb/status.InitDB.complete");
+    }
+
+    private static void initDB()
+    {
         ApplicationContext context = Top.getContext();
 
         createConfiguration(context);
         createOrder(context);
-
-        ActionUtils.createMarkerFile("~/.mvdb/status.InitDB.complete");
+        
     }
 
     private static void createOrder(ApplicationContext context)
