@@ -93,7 +93,7 @@ public class ExtractDBChanges  implements IAction
 
 
 
-    private static void extractDbchanges(String customerName) throws JSONException
+    public static void extractDbchanges(String customerName) throws JSONException
     {
         ApplicationContext context = Top.getContext();
         

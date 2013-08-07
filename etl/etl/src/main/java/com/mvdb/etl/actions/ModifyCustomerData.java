@@ -21,23 +21,7 @@ public class ModifyCustomerData  implements IAction
 {
     private static Logger logger = LoggerFactory.getLogger(ModifyCustomerData.class);
 
-    enum Action{
-        
-        DELETE("Delete"),
-        UNDELETE("Undelete");
-        
-        String name; 
-        private Action(String name)
-        {
-            this.name = name; 
-        }
-        
-        public String getName()
-        {
-            return name;            
-        }
-        
-    }
+
     
     public static void main(String[] args)
     {
@@ -106,12 +90,22 @@ public class ModifyCustomerData  implements IAction
         }
         
            
-        modifyCustomerData(customerName, modifyAction);
+        modifyCustomerData(customerName, modifyAction, 1L);
         
         ActionUtils.createMarkerFile("~/.mvdb/status.ModifyCustomerData.complete", true);
     }
     
-    private static void modifyCustomerData(String customerName, String modifyAction)
+    public static void modifyCustomerData(String customerName, Action modifyAction, Long actionId)
+    {
+        modifyCustomerData(customerName, modifyAction.getName(), actionId);
+    }
+    
+    public static void modifyCustomerData(String customerName)
+    {
+        modifyCustomerData(customerName, Action.NOOP, -1L);
+    }
+    
+    public static void modifyCustomerData(String customerName, String modifyAction, Long actionId)
     {
         ApplicationContext context = Top.getContext();
 
@@ -146,11 +140,11 @@ public class ModifyCustomerData  implements IAction
         //orderIdList = getRandomOrderIds(orderDAO, 1);
         if(Action.DELETE.getName().equals(modifyAction))
         {
-            handleDelete(orderDAO, 1L);
+            handleDelete(orderDAO, actionId);
         }
         else if(Action.UNDELETE.getName().equals(modifyAction))
         {
-            handleUndelete(orderDAO, 1L, modifiedId);
+            handleUndelete(orderDAO, actionId, modifiedId);
         }
         
         
@@ -211,7 +205,7 @@ public class ModifyCustomerData  implements IAction
 
     private static void handleDelete(OrderDAO orderDAO, long orderId)
     {    
-        if(orderDAO.findByOrderId(orderId) != null) { 
+        if(orderDAO.findByOrderId(orderId) == null) { 
             logger.info("Cannot delete non-existent Id " + orderId + " in orders");
             return;
         }

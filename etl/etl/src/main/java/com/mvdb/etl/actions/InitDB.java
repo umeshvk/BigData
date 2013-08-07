@@ -37,7 +37,7 @@ public class InitDB implements IAction
         ActionUtils.createMarkerFile("~/.mvdb/status.InitDB.complete");
     }
 
-    private static void initDB()
+    public static void initDB()
     {
         ApplicationContext context = Top.getContext();
 

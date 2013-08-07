@@ -11,7 +11,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
+import org.springframework.jdbc.core.PreparedStatementSetter;
+import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.support.JdbcDaoSupport;
 
@@ -69,12 +72,28 @@ public class JdbcOrderDAO extends JdbcDaoSupport implements OrderDAO
     }
 
     @Override
-    public Order findByOrderId(long orderId)
+    public Order findByOrderId(final long orderId)
     {
 
-        String sql = "SELECT * FROM ORDERS WHERE ORDER_ID = ?";
 
-        Order order = (Order) getJdbcTemplate().queryForObject(sql, new Object[] { orderId }, new OrderRowMapper());
+        Order order = (Order)getJdbcTemplate().query(
+                "SELECT * FROM ORDERS WHERE ORDER_ID = ?",
+                 new PreparedStatementSetter() {
+                   public void setValues(PreparedStatement preparedStatement) throws
+                     SQLException {
+                       preparedStatement.setLong(1, orderId);
+                   }
+                 }, 
+                 new ResultSetExtractor() {
+                   public Order extractData(ResultSet resultSet) throws SQLException,
+                     DataAccessException {
+                       if (resultSet.next()) {
+                           return com.mvdb.etl.model.OrderRowMapper.createOrder(resultSet);
+                       }
+                       return null;
+                   }
+                 }
+             );
 
         return order;
     }

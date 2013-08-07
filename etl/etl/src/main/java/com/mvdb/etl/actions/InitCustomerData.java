@@ -105,7 +105,7 @@ public class InitCustomerData  implements IAction
 
     }
 
-    private static void initCustomerData(String customerName, int batchCount, int batchSize, Date startDate,
+    public static void initCustomerData(String customerName, int batchCount, int batchSize, Date startDate,
             Date endDate)
     {
        
