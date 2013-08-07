@@ -17,7 +17,9 @@ import org.springframework.context.ApplicationContext;
 
 import com.mvdb.etl.dao.ConfigurationDAO;
 import com.mvdb.etl.dao.OrderDAO;
+import com.mvdb.etl.dao.OrderLineItemDAO;
 import com.mvdb.etl.model.Order;
+import com.mvdb.etl.model.OrderLineItem;
 import com.mvdb.etl.monitoring.TimedExecutor;
 import com.mvdb.etl.util.RandomUtil;
 
@@ -112,13 +114,15 @@ public class InitCustomerData  implements IAction
         ApplicationContext context = Top.getContext();
 
         
-        final OrderDAO orderDAO = (OrderDAO) context.getBean("orderDAO");        
+        final OrderDAO orderDAO = (OrderDAO) context.getBean("orderDAO"); 
+        final OrderLineItemDAO orderLineItemDAO = (OrderLineItemDAO) context.getBean("orderLineItemDAO"); 
         final ConfigurationDAO configurationDAO = (ConfigurationDAO) context.getBean("configurationDAO");
 
-        initData(orderDAO, batchCount, batchSize, startDate, endDate);
+        initOrderData(orderDAO, batchCount, batchSize, startDate, endDate);
+        initOrderLineItemData(orderLineItemDAO, batchCount, batchSize, startDate, endDate);
         initConfiguration(configurationDAO, customerName, endDate);
         
-        int total = orderDAO.findTotalOrders();
+        int total = orderDAO.findTotalRecords();
         System.out.println("Total : " + total);
 
         long max = orderDAO.findMaxId();
@@ -130,7 +134,8 @@ public class InitCustomerData  implements IAction
     private static void initConfiguration(ConfigurationDAO configurationDAO, String customerName, Date endDate)
     {
         String schemaDescription = "{ ''root'' : [" + 
-                        "{''table'' : ''orders'', ''keyColumn'' : ''order_id'', ''updateTimeColumn'' : ''update_time''}" +
+                        "{''table'' : ''orders'', ''keyColumn'' : ''order_id'', ''updateTimeColumn'' : ''update_time''} , " +
+                        "{''table'' : ''order_line_item'', ''keyColumn'' : ''order_line_item_id'', ''updateTimeColumn'' : ''update_time''}" +
                         /**: Add one such line for every new table in the schema for the specified customer
                         "{''table'' : ''order_line_item'', ''keyColumn'' : ''order_line_item_id'', ''updateTimeColumn'' : ''update_time''}" +
                         **/ 
@@ -150,7 +155,7 @@ public class InitCustomerData  implements IAction
         configurationDAO.executeSQl(sqlArray);        
     }
 
-    private static void initData(final OrderDAO orderDAO, final int batchCount, final int batchSize, final Date startDate, final Date endDate)
+    private static void initOrderData(final OrderDAO orderDAO, final int batchCount, final int batchSize, final Date startDate, final Date endDate)
     {
         
         for (int batchIndex = 0; batchIndex < batchCount; batchIndex++)
@@ -174,7 +179,49 @@ public class InitCustomerData  implements IAction
                         orders.add(order);
                     }
                     orderDAO.insertBatch(orders);
-                    System.out.println(String.format("Completed Batch %d of %d where size of batch is %s",
+                    System.out.println(String.format("Completed Order Batch %d of %d where size of batch is %s",
+                            batchIndexFinal + 1, batchCount, batchSize));
+                }
+
+            };
+            long runTime = te.timedExecute();
+            System.out.println("Ran for seconds: " + runTime / 1000);
+        }
+        
+    }
+    
+    private static void initOrderLineItemData(final OrderLineItemDAO orderLineItemDAO, 
+            final int batchCount, final int batchSize, 
+            final Date startDate, final Date endDate)
+    {
+        
+        for (int batchIndex = 0; batchIndex < batchCount; batchIndex++)
+        {
+            final int batchIndexFinal = batchIndex;
+            TimedExecutor te = new TimedExecutor() {
+
+                @Override
+                public void execute()
+                {
+
+                    
+                    List<OrderLineItem> orderLineItemList = new ArrayList<OrderLineItem>();
+                    for (int recordIndex = 0; recordIndex < batchSize; recordIndex++)
+                    {
+                        Date createDate = RandomUtil.getRandomDateInRange(startDate, endDate);
+                        Date updateDate = new Date();
+                        updateDate.setTime(createDate.getTime());
+                        OrderLineItem orderLineItem = new OrderLineItem(orderLineItemDAO.getNextSequenceValue(), 
+                                                                        RandomUtil.getRandomInt(1, 10), 
+                                                                        RandomUtil.getRandomString(5), 
+                                                                        RandomUtil.getRandomInt(1, 5), 
+                                                                        RandomUtil.getRandomDouble(200.00), 
+                                                                        createDate, 
+                                                                        updateDate);
+                        orderLineItemList.add(orderLineItem);
+                    }
+                    orderLineItemDAO.insertBatch(orderLineItemList);
+                    System.out.println(String.format("Completed OrderLineItem Batch %d of %d where size of batch is %s",
                             batchIndexFinal + 1, batchCount, batchSize));
                 }
 

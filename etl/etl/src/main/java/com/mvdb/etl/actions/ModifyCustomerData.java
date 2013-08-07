@@ -113,7 +113,7 @@ public class ModifyCustomerData  implements IAction
 
         
         long maxId = orderDAO.findMaxId();
-        long totalOrders = orderDAO.findTotalOrders();
+        long totalOrders = orderDAO.findTotalRecords();
         
         long modifyCount = (long)(totalOrders * 0.1);
         if(modifyCount == 0L)
@@ -174,7 +174,7 @@ public class ModifyCustomerData  implements IAction
         logger.info("Modify Id " + orderId + " in orders");
         
         Date updateDate = RandomUtil.getRandomDateInRange(startDate1, endDate1); 
-        Order theOrder = orderDAO.findByOrderId(orderId);
+        Order theOrder = orderDAO.findById(orderId);
         theOrder.setNote(RandomUtil.getRandomString(4));
         theOrder.setUpdateTime(updateDate);
         theOrder.setSaleCode(RandomUtil.getRandomInt());
@@ -183,11 +183,11 @@ public class ModifyCustomerData  implements IAction
 
     private static void handleUndelete(OrderDAO orderDAO, long orderId, long referenceOrderId)
     {
-        if(orderDAO.findByOrderId(orderId) != null) { 
+        if(orderDAO.findById(orderId) != null) { 
             logger.info("Cannot undelete existing Id " + orderId + " in orders");
             return;
         }
-        Order referenceOrder = orderDAO.findByOrderId(referenceOrderId);
+        Order referenceOrder = orderDAO.findById(referenceOrderId);
         if(referenceOrder == null) { 
             logger.info("Cannot undelete using non-existent Id " + orderId + " in orders");
             return;
@@ -205,7 +205,7 @@ public class ModifyCustomerData  implements IAction
 
     private static void handleDelete(OrderDAO orderDAO, long orderId)
     {    
-        if(orderDAO.findByOrderId(orderId) == null) { 
+        if(orderDAO.findById(orderId) == null) { 
             logger.info("Cannot delete non-existent Id " + orderId + " in orders");
             return;
         }

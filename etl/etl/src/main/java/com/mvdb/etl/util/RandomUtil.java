@@ -42,6 +42,12 @@ public class RandomUtil
         long retval = (long) Math.floor(Math.random() * max);
         return retval;
     }
+    
+    public static double getRandomDouble(double max)
+    {
+        double retval = Math.floor(Math.random() * max);
+        return retval;
+    }
 
     public static long getRandomLong()
     {
@@ -49,10 +55,10 @@ public class RandomUtil
         return retval;
     }
 
-    public static int getRandomInt(int max)
+    public static int getRandomInt(int min, int max)
     {
-        int retval = (int) Math.floor(Math.random() * max);
-        return retval;
+        int retval = (int) Math.floor(Math.random() * (max-min));
+        return min + retval;
     }
 
     public static int getRandomInt()

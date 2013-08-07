@@ -119,6 +119,8 @@ public class ExtractDBChanges  implements IAction
         Map<String, ColumnMetadata> metadataMap = orderDAO.findMetadata();
         //write file schema-orders.dat in snapshotDirectory
         genericDAO.fetchMetadata("orders", snapshotDirectory);
+        genericDAO.fetchMetadata("order_line_item", snapshotDirectory);
+        
         //writes files: header-orders.dat, data-orders.dat in snapshotDirectory
         JSONObject json = new JSONObject(schemaDescriptionValue);
         JSONArray rootArray = json.getJSONArray("root");

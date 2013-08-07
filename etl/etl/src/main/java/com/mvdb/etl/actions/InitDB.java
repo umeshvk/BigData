@@ -8,10 +8,10 @@ import java.util.Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import com.mvdb.etl.dao.ConfigurationDAO;
 import com.mvdb.etl.dao.OrderDAO;
+import com.mvdb.etl.dao.OrderLineItemDAO;
 import com.mvdb.etl.util.db.SequenceNames;
 
 public class InitDB implements IAction
@@ -43,6 +43,7 @@ public class InitDB implements IAction
 
         createConfiguration(context);
         createOrder(context);
+        createOrderLineItem(context);
         
     }
 
@@ -51,8 +52,8 @@ public class InitDB implements IAction
         final OrderDAO orderDAO = (OrderDAO) context.getBean("orderDAO");
 
         String[] commands = {
-                "DROP SEQUENCE IF EXISTS " + SequenceNames.ORDER_SEQUENCE_NAME + ";",
-                "CREATE SEQUENCE com_mvdb_etl_dao_OrderDAO START 1;",
+                "DROP SEQUENCE IF EXISTS " + SequenceNames.ORDER_SEQUENCE_NAME.getName() + ";",
+                "CREATE SEQUENCE " + SequenceNames.ORDER_SEQUENCE_NAME.getName() + "  START 1;",
                 "COMMIT;",
                 "DROP TABLE IF EXISTS orders;",
                 "CREATE TABLE  orders (" + " ORDER_ID bigint  NOT NULL, " + " NOTE varchar(200) NOT NULL,"
@@ -61,6 +62,26 @@ public class InitDB implements IAction
 
         
         orderDAO.executeSQl(commands);
+        
+    }
+    
+    private static void createOrderLineItem(ApplicationContext context)
+    {
+        final OrderLineItemDAO orderLineItemDAO = (OrderLineItemDAO) context.getBean("orderLineItemDAO");
+
+        String[] commands = {
+                "DROP SEQUENCE IF EXISTS " + SequenceNames.ORDER_LINE_ITEM_SEQUENCE_NAME.getName() + ";",
+                "CREATE SEQUENCE " + SequenceNames.ORDER_LINE_ITEM_SEQUENCE_NAME.getName() + " START 1;",
+                "COMMIT;",
+                "DROP TABLE IF EXISTS order_line_item;",
+                "CREATE TABLE  order_line_item (" + " ORDER_LINE_ITEM_ID bigint  NOT NULL, " + " ORDER_ID bigint  NOT NULL, " + " DESCRIPTION varchar(200) NOT NULL,"
+                        + " PRICE NUMERIC(10,2) NOT NULL," + " QUANTITY int NOT NULL," 
+                        + " CREATE_TIME timestamp NOT NULL,"
+                        + " UPDATE_TIME timestamp NOT NULL, " 
+                        + "constraint order_line_item_pk PRIMARY KEY (ORDER_LINE_ITEM_ID)" + " ); ", "COMMIT;" };
+
+        
+        orderLineItemDAO.executeSQl(commands);
         
     }
     
@@ -77,7 +98,7 @@ public class InitDB implements IAction
         commandList.add("CREATE TABLE  configuration (" 
                         + " customer varchar(128)  NOT NULL, " 
                         + " name varchar(128)  NOT NULL,"
-                        + " value varchar(128)  NOT NULL, " 
+                        + " value varchar(1024)  NOT NULL, " 
                         + " category varchar(32)  NOT NULL, " 
                         + " note varchar(512)  NOT NULL, " 
                         + "UNIQUE (customer, name, value, category)); ");

@@ -6,19 +6,19 @@ import java.util.Map;
 
 import com.mvdb.etl.consumer.Consumer;
 import com.mvdb.etl.data.ColumnMetadata;
-import com.mvdb.etl.model.Order;
+import com.mvdb.etl.model.OrderLineItem;
 
-public interface OrderDAO
+public interface OrderLineItemDAO
 {
     public Map<String, ColumnMetadata> findMetadata(); 
     
-    public void insert(Order order);
+    public void insert(OrderLineItem orderLineItem);
 
-    public void insertBatch(List<Order> customer);
+    public void insertBatch(List<OrderLineItem> customer);
 
-    public Order findById(long orderId);
+    public OrderLineItem findById(long orderLineItemId);
 
-    public List<Order> findAll();
+    public List<OrderLineItem> findAll();
     
     public void findAll(Timestamp modifiedAfter, Consumer consumer);
     
@@ -30,10 +30,10 @@ public interface OrderDAO
 
     public void executeSQl(String[] sqlList);
 
-    public void update(Order order);
+    public void update(OrderLineItem orderLineItem);
 
     public List<Long> findAllIds();
 
-    public void deleteById(long orderId);
+    public void deleteById(long orderLineItemId);
 
 }
