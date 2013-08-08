@@ -151,7 +151,11 @@ public class ExtractDBChanges  implements IAction
             
             ActionUtils.copyLocalDirectoryToHdfsDirectory(sourceDirectoryAbsolutePath, targetDirectoryFullPath);
             String dirName = snapshotDirectory.getName();
-            ActionUtils.setConfigurationValue(customerName, ConfigurationKeys.LAST_COPY_TO_HDFS_DIRNAME, dirName);
+            String passiveDBName =  ActionUtils.getPassiveDBName(customerName);
+            String activeDBName = ActionUtils.getActiveDBName(customerName);
+            
+            ActionUtils.setConfigurationValue(customerName + "." + activeDBName, ConfigurationKeys.LAST_COPY_TO_HDFS_DIRNAME, dirName);
+            ActionUtils.setConfigurationValue(customerName + "." + passiveDBName, ConfigurationKeys.LAST_COPY_TO_HDFS_DIRNAME, dirName);
         } catch (Throwable e)
         {
             e.printStackTrace();

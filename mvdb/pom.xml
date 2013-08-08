@@ -17,7 +17,7 @@
 						<appendAssemblyId>false</appendAssemblyId>
 						<archive>
 							<manifest>
-								<mainClass>com.mvdb.platform.action.VersionMerge</mainClass>
+								<mainClass>com.mvdb.platform.action.merge.VersionMerge</mainClass>
 							</manifest>
 						</archive>
 						<descriptorRefs>

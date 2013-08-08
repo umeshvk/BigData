@@ -44,12 +44,13 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
 {
     private static Logger logger = LoggerFactory.getLogger(JdbcGenericDAO.class);
     private GlobalMvdbKeyMaker globalMvdbKeyMaker = new GlobalMvdbKeyMaker();
-    private boolean writeDataHeader(DataHeader dataHeader, String objectName, File snapshotDirectory)
+    
+    private boolean writeDataHeader(DataHeader dataHeader, String objectName, String fileObjectName, File snapshotDirectory)
     {
         try
         {
             snapshotDirectory.mkdirs();
-            String headerFileName = "header-" + objectName + ".dat";
+            String headerFileName = "header-" + fileObjectName + ".dat";
             File headerFile = new File(snapshotDirectory, headerFileName);
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
@@ -166,20 +167,21 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
     public DataHeader fetchAll2(File snapshotDirectory, Timestamp modifiedAfter, String objectName, String keyName, String updateTimeColumnName)
     {
         DataHeader dataHeader = new DataHeader();
-        writeUpdates(snapshotDirectory, modifiedAfter, objectName, keyName, updateTimeColumnName, dataHeader);                
-        writeDataHeader(dataHeader, objectName, snapshotDirectory);
-        writeIds(snapshotDirectory, objectName, keyName, updateTimeColumnName/*, dataHeader*/);
+        String fileObjectName = objectName.replaceAll("_", "");
+        writeUpdates(snapshotDirectory, modifiedAfter, objectName, fileObjectName, keyName, updateTimeColumnName, dataHeader);                
+        writeDataHeader(dataHeader, objectName, fileObjectName, snapshotDirectory);
+        writeIds(snapshotDirectory, objectName, fileObjectName, keyName, updateTimeColumnName/*, dataHeader*/);
         return dataHeader;
     }
 
 
     
-    private void writeIds(File snapshotDirectory, String objectName, final String keyName,
+    private void writeIds(File snapshotDirectory, String objectName, String fileObjectName, final String keyName,
             final String updateTimeColumnName/*, DataHeader dataHeader*/)
     {
         final String snapShotDirName = snapshotDirectory.getName();
         //final Date refreshTimeStamp = ActionUtils.getDate(snapShotDirName);
-        File objectFile = new File(snapshotDirectory, "ids-" + objectName + ".dat");
+        File objectFile = new File(snapshotDirectory, "ids-" + fileObjectName + ".dat");
         final GenericConsumer genericConsumer = new SequenceFileConsumer(objectFile);
         
 
@@ -204,9 +206,9 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
         
     }
 
-    private void writeUpdates(File snapshotDirectory, Timestamp modifiedAfter, String objectName, final String keyName, final String updateTimeColumnName, final DataHeader dataHeader)
+    private void writeUpdates(File snapshotDirectory, Timestamp modifiedAfter, String objectName, String fileObjectName, final String keyName, final String updateTimeColumnName, final DataHeader dataHeader)
     {
-        File objectFile = new File(snapshotDirectory, "data-" + objectName + ".dat");
+        File objectFile = new File(snapshotDirectory, "data-" + fileObjectName + ".dat");
         final GenericConsumer genericConsumer = new SequenceFileConsumer(objectFile);
         
         final String snapShotDirName = snapshotDirectory.getName();

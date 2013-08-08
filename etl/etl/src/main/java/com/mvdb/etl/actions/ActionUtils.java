@@ -48,6 +48,26 @@ public class ActionUtils
     }
     
     
+    public static String getPassiveDBName(String customerName)
+    {
+        String passiveDBName = null; 
+        String activeDBName = ActionUtils.getConfigurationValue(customerName, ConfigurationKeys.ACTIVE_DB_DIR);
+        if(activeDBName.equals("mv1"))
+        {
+            passiveDBName = "mv2"; 
+        } else if(activeDBName.equals("mv2")){ 
+            passiveDBName = "mv1"; 
+        } 
+        
+        return passiveDBName;
+    }
+    
+    public static String getActiveDBName(String customerName)
+    {        
+        String activeDBName = ActionUtils.getConfigurationValue(customerName, ConfigurationKeys.ACTIVE_DB_DIR);              
+        return activeDBName;
+    }
+    
     public static String getCSV(Collection collection, String regex)
     {
         StringBuffer sb = new StringBuffer();
