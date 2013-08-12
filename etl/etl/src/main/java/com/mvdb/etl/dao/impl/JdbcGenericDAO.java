@@ -11,8 +11,9 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.Date;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
@@ -28,13 +29,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.support.JdbcDaoSupport;
 
-import com.mvdb.etl.actions.ActionUtils;
 import com.mvdb.etl.consumer.GenericConsumer;
 import com.mvdb.etl.consumer.SequenceFileConsumer;
 import com.mvdb.etl.dao.GenericDAO;
 import com.mvdb.etl.data.ColumnMetadata;
 import com.mvdb.etl.data.DataHeader;
-import com.mvdb.etl.data.DataRecord;
 import com.mvdb.etl.data.GenericDataRecord;
 import com.mvdb.etl.data.GenericIdRecord;
 import com.mvdb.etl.data.IdRecord;
@@ -78,7 +77,7 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
         " AND a.attrelid = c.oid" + 
         " AND a.atttypid = t.oid"; 
         //String sql1 = "describe " + objectName;
-        final Map<String, ColumnMetadata> metaDataMap = new HashMap<String, ColumnMetadata>();
+        final Map<String, Object> metaDataMap = new HashMap<String, Object>();
         metadata.setColumnMetadataMap(metaDataMap);
         metadata.setTableName(objectName);
 
@@ -111,11 +110,15 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
     public void fetchMetadata(String objectName, File snapshotDirectory)
     {
         final Metadata metadata = new Metadata();
+        final String snapShotDirName = snapshotDirectory.getName();
+        metadata.setRefreshTimeStamp(snapShotDirName);
         metadata.setTableName(objectName);
         String sql = "SELECT * FROM " + objectName + " limit 1";
-        final Map<String, ColumnMetadata> metaDataMap = new HashMap<String, ColumnMetadata>();
+        final Map<String, Object> metaDataMap = new HashMap<String, Object>();
         metadata.setColumnMetadataMap(metaDataMap);
         metadata.setTableName(objectName);
+        final List<Object> cmdList = new ArrayList<Object>();
+        metaDataMap.put(Metadata.COLUMNDATALISTKEY, cmdList);
 
         getJdbcTemplate().query(sql, new RowCallbackHandler() {
 
@@ -131,8 +134,10 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
                     columnMetadata.setColumnName(rsm.getColumnName(column));
                     columnMetadata.setColumnType(rsm.getColumnType(column));
                     columnMetadata.setColumnTypeName(rsm.getColumnTypeName(column));
-
-                    metaDataMap.put(rsm.getColumnName(column), columnMetadata);
+                    columnMetadata.setPrecision(rsm.getPrecision(column));
+                    columnMetadata.setScale(rsm.getScale(column));
+                    cmdList.add(columnMetadata);
+                    //metaDataMap.put(rsm.getColumnName(column), columnMetadata);
                 }
 
             }
@@ -145,20 +150,68 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
     {
         try
         {
-            String structFileName = "schema-" + metadata.getTableName() + ".dat";
+            File objectFile = new File(snapshotDirectory, "schema-" + metadata.getTableName().replaceAll("_", "") + ".dat");
+            final GenericConsumer genericConsumer = new SequenceFileConsumer(objectFile);            
             snapshotDirectory.mkdirs();
-            File structFile = new File(snapshotDirectory, structFileName);
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(baos);
-            oos.writeObject(metadata);
-            oos.flush();
-            FileUtils.writeByteArrayToFile(structFile, baos.toByteArray());
+            genericConsumer.consume(metadata);
+            genericConsumer.flushAndClose();    
+
             return true;
         } catch (Throwable t)
         {
             t.printStackTrace();
             return false;
         }
+
+    }
+    
+    @Override
+    public Metadata readMetadata(String schemaFileUrl, Configuration conf)
+    {
+        Path path = new Path(schemaFileUrl);       
+        return readMetadata(path,  conf); 
+    }
+    
+
+    
+    @Override
+    public Metadata readMetadata(Path schemaFilePath, Configuration conf)
+    {
+        FileSystem fs;
+        Metadata metadata = null;
+        SequenceFile.Reader reader = null; 
+        try
+        {
+            
+            fs = FileSystem.get(conf);
+            reader = new SequenceFile.Reader(fs, schemaFilePath, conf);
+
+            Text key = new Text(); 
+            BytesWritable value = new BytesWritable();
+            
+            while (reader.next(key, value))
+            {
+                byte[] bytes = value.getBytes();
+                ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+                ObjectInputStream ois = new ObjectInputStream(bis);
+                metadata = (Metadata) ois.readObject();
+                System.out.println(metadata.toString());
+            }
+            System.out.println("Last Metadata:" + metadata.toString());
+
+            
+        } catch (IOException e)
+        {
+            logger.error("readMetadata():", e);
+            return null;
+        } catch (ClassNotFoundException e)
+        {
+            logger.error("readMetadata():", e);
+            return null;
+        } finally { 
+            IOUtils.closeStream(reader);
+        }
+        return metadata; 
 
     }
 
@@ -206,6 +259,57 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
         
     }
 
+    @Override
+    public List<Object[]> getTableInfo2(String query)
+    {
+        final List<Object[]> result = new ArrayList<Object[]>();
+        getJdbcTemplate().query(query, new Object[] { }, new RowCallbackHandler() {
+
+            @Override
+            public void processRow(ResultSet row) throws SQLException
+            {
+                
+                ResultSetMetaData rsm = row.getMetaData();
+                int columnCount = rsm.getColumnCount();
+                Object[] data = new Object[columnCount];
+                for (int column = 1; column <= columnCount; column++)
+                {
+                    data[column-1] = row.getObject(column);
+                }
+                result.add(data);
+
+            }
+        });
+        return result;
+    }
+    
+    public List<String[]> getTableInfo(String query)
+    {
+        final List<String[]> result = new ArrayList<String[]>();
+
+
+        if(true) return result;
+        getJdbcTemplate().query(query, new Object[] { }, new RowCallbackHandler() {
+
+            @Override
+            public void processRow(ResultSet row) throws SQLException
+            {
+                
+                ResultSetMetaData rsm = row.getMetaData();
+                int columnCount = rsm.getColumnCount();
+                String[] data = new String[columnCount];
+                for (int column = 1; column < (columnCount + 1); column++)
+                {
+                    data[column-1] = row.getString(column);
+                }
+                result.add(data);
+
+            }
+        });
+        
+        return result;
+    }
+    
     private void writeUpdates(File snapshotDirectory, Timestamp modifiedAfter, String objectName, String fileObjectName, final String keyName, final String updateTimeColumnName, final DataHeader dataHeader)
     {
         File objectFile = new File(snapshotDirectory, "data-" + fileObjectName + ".dat");
@@ -327,6 +431,8 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
         }
         return null;
     }
+
+
 
 
     

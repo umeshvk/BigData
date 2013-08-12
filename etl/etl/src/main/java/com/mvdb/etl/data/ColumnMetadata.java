@@ -7,12 +7,14 @@ import java.io.ObjectOutput;
 
 public class ColumnMetadata implements Externalizable
 {
-
+    private static final long serialVersionUID = 1L;
     String  columnName;
     String  columnTypeName;
     String  columnLabel;
     int     columnType;
-
+    int precision;
+    int scale; 
+    
     @Override
     public void readExternal(ObjectInput input) throws IOException, ClassNotFoundException
     {
@@ -21,19 +23,21 @@ public class ColumnMetadata implements Externalizable
         columnTypeName = (String)input.readObject();
         columnLabel = (String)input.readObject();
         columnType = input.readInt();
-        
+        precision = input.readInt();
+        scale = input.readInt();
     }
 
     @Override
     public void writeExternal(ObjectOutput output) throws IOException
-    {
-        
+    { 
         output.writeObject(columnName);
         output.writeObject(columnTypeName);
         output.writeObject(columnLabel);
         output.writeInt(columnType);
-        
+        output.writeInt(precision);
+        output.writeInt(scale);        
     }
+    
     
     public ColumnMetadata()
     {
@@ -80,6 +84,26 @@ public class ColumnMetadata implements Externalizable
         this.columnType = columnType;
     }
 
+    public int getPrecision()
+    {
+        return precision;
+    }
+
+    public void setPrecision(int precision)
+    {
+        this.precision = precision;
+    }
+
+    public int getScale()
+    {
+        return scale;
+    }
+
+    public void setScale(int scale)
+    {
+        this.scale = scale;
+    }
+
     @Override
     public int hashCode()
     {
@@ -89,6 +113,8 @@ public class ColumnMetadata implements Externalizable
         result = prime * result + ((columnName == null) ? 0 : columnName.hashCode());
         result = prime * result + columnType;
         result = prime * result + ((columnTypeName == null) ? 0 : columnTypeName.hashCode());
+        result = prime * result + precision;
+        result = prime * result + scale;
         return result;
     }
 
@@ -121,6 +147,10 @@ public class ColumnMetadata implements Externalizable
             if (other.columnTypeName != null)
                 return false;
         } else if (!columnTypeName.equals(other.columnTypeName))
+            return false;
+        if (precision != other.precision)
+            return false;
+        if (scale != other.scale)
             return false;
         return true;
     }

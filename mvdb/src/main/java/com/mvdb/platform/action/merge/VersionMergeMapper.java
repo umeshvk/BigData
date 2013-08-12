@@ -22,20 +22,44 @@ public  class VersionMergeMapper extends Mapper<Text, BytesWritable, MergeKey, B
         System.out.println(ManagementFactory.getRuntimeMXBean().getName());
         FileSplit fileSplit = (FileSplit)context.getInputSplit();
         String filename = fileSplit.getPath().getName();
-        if(filename.startsWith("data-") == false && filename.startsWith("ids-") == false)
+        if(filename.contains("-r-") == true)
         {
-            return;
+            String fn = fileSplit.getPath().getParent().getName();
+            String customer = fileSplit.getPath().getParent().getParent().getParent().getParent().getName();
+            System.out.println("fn: "+fn);
+            System.out.println("customer: "+customer);
+            System.out.println("File name: "+filename);
+            System.out.println("Directory and File name:"+fileSplit.getPath().toString());
+            
+            mergeKey.setCompany(customer);
+            //String fn = filename.substring(filename.indexOf('-') + 1, filename.lastIndexOf(".dat"));            
+            mergeKey.setTable(fn);
+            mergeKey.setId(key.toString());
+            
+            context.write(mergeKey, value);
         }
-        String timestamp = fileSplit.getPath().getParent().getName();
-        String customer = fileSplit.getPath().getParent().getParent().getName();
-        System.out.println("File name "+filename);
-        System.out.println("Directory and File name"+fileSplit.getPath().toString());
+        else if(filename.startsWith("schema-") == true || filename.startsWith("data-") == true || filename.startsWith("ids-") == true)
+        {
+            String customer = fileSplit.getPath().getParent().getParent().getName();
+            String fn = filename.substring(filename.indexOf('-') + 1, filename.lastIndexOf(".dat")); 
+            if(filename.startsWith("schema-") == true)
+            {
+                fn = "schema" + fn;
+            }
+            System.out.println("fn: "+fn);
+            System.out.println("customer: "+customer);
+            System.out.println("File name: "+filename);
+            System.out.println("Directory and File name:"+fileSplit.getPath().toString());
+            
+            mergeKey.setCompany(customer);
+            mergeKey.setTable(fn);
+            mergeKey.setId(key.toString());
+            
+
+            
+            context.write(mergeKey, value);
+        }
         
-        mergeKey.setCompany(customer);
-        String fn = filename.substring(filename.indexOf('-') + 1, filename.lastIndexOf(".dat"));            
-        mergeKey.setTable(fn);
-        mergeKey.setId(key.toString());
-        
-        context.write(mergeKey, value);
+
     }
 }

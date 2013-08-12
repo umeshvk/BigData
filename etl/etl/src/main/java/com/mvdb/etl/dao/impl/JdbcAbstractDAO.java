@@ -46,7 +46,8 @@ public abstract class JdbcAbstractDAO<T> extends JdbcDaoSupport implements IDAO<
                     metadata.setColumnName(rsm.getColumnName(column));
                     metadata.setColumnType(rsm.getColumnType(column));
                     metadata.setColumnTypeName(rsm.getColumnTypeName(column));
-                    
+                    metadata.setPrecision(rsm.getPrecision(column));
+                    metadata.setScale(rsm.getScale(column));                    
                     metaDataMap.put(rsm.getColumnName(column), metadata);
                 }
                 

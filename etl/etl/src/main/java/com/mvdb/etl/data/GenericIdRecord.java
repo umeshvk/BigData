@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Date;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -179,8 +180,16 @@ public class GenericIdRecord implements IdRecord
         return true;
     }
 
+    @Override
+    public Map<String, Object> getDataMap()
+    {
+        throw new RuntimeException("Operation not supported");
+    }
 
-    
-
+    @Override
+    public void removeIdenticalColumn(String columnName, Object latestValue)
+    {
+        throw new RuntimeException("Operation not supported"); 
+    }
 
 }

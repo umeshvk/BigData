@@ -9,9 +9,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -28,6 +31,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 
 import com.mvdb.etl.dao.ConfigurationDAO;
+import com.mvdb.etl.dao.GenericDAO;
+import com.mvdb.etl.data.ColumnMetadata;
+import com.mvdb.etl.data.Metadata;
 import com.mvdb.etl.model.Configuration;
 
 public class ActionUtils
@@ -66,6 +72,21 @@ public class ActionUtils
     {        
         String activeDBName = ActionUtils.getConfigurationValue(customerName, ConfigurationKeys.ACTIVE_DB_DIR);              
         return activeDBName;
+    }
+    
+    
+    public static String[] getTokensFromCSV(String csv, String regex)
+    {
+        String[] tokens = csv.split(regex);
+        String[] result = new String[tokens.length];
+        int i=0; 
+        for(String token : tokens)
+        {
+            result[i] = tokens[i].trim();
+            i++;
+        }
+        
+        return result; 
     }
     
     public static String getCSV(Collection collection, String regex)
@@ -478,6 +499,73 @@ public class ActionUtils
         }
     }
 
+    public static List<ColumnMetadata> getTableInfo(Path schemaFile, org.apache.hadoop.conf.Configuration conf)
+    {        
+        ApplicationContext context = Top.getContext();
+        GenericDAO genericDAO = (GenericDAO) context.getBean("genericDAO");   
+        Metadata metadata = genericDAO.readMetadata(schemaFile, conf);
+        Map<String, Object> map = metadata.getColumnMetadataMap();
+        
+        List<ColumnMetadata> tableInfo = new ArrayList<ColumnMetadata>();
+        Iterator<String> iter = map.keySet().iterator();
+        while(iter.hasNext())
+        {
+            String key = iter.next();
+            ColumnMetadata columnMetadata = (ColumnMetadata)map.get(key);
+            tableInfo.add(columnMetadata);
+        }
+        return tableInfo;
+    }
+    
+    public static List<ColumnMetadata> getTableInfo3(File snaphostDirectory, String tableName, org.apache.hadoop.conf.Configuration conf)
+    {        
+        ApplicationContext context = Top.getContext();
+        GenericDAO genericDAO = (GenericDAO) context.getBean("genericDAO");   
+        File schemaFile = new File(snaphostDirectory, "schema-" + tableName + ".dat");
+        Metadata metadata = genericDAO.readMetadata(schemaFile.toURI().toString(), conf);
+        Map<String, Object> map = metadata.getColumnMetadataMap();
+        
+        List<ColumnMetadata> tableInfo = new ArrayList<ColumnMetadata>();
+        Iterator<String> iter = map.keySet().iterator();
+        while(iter.hasNext())
+        {
+            String key = iter.next();
+            ColumnMetadata columnMetadata = (ColumnMetadata)map.get(key);
+            tableInfo.add(columnMetadata);
+        }
+        return tableInfo;
+    }
+    
+    public static List<Object[]> getTableInfo2(String tableName)
+    {
+
+        String query = String.format("select column_name, data_type, numeric_precision, numeric_precision_radix,numeric_scale from information_schema.columns where table_name = '%s'", tableName); 
+                                             
+        ApplicationContext context = Top.getContext();
+        GenericDAO genericDAO = (GenericDAO) context.getBean("genericDAO");   
+        List<Object[]> tableInfo = genericDAO.getTableInfo2(query);
+        
+        return tableInfo;
+        
+    }
+    
+    public static List<String[]> getTableInfo(String tableName)
+    {
+
+        String query = String.format("SELECT a.attname, t.typname " + 
+                                             "FROM pg_class c, pg_attribute a, pg_type t " + 
+                                             "WHERE c.relname = '%s'    " +                                              
+                                             "AND a.attrelid = c.oid and  a.atttypid = t.oid and " + 
+                                             "a.attname in (select column_name from information_schema.columns where table_name = '%s')", tableName, tableName); 
+                                             
+        ApplicationContext context = Top.getContext();
+        GenericDAO genericDAO = (GenericDAO) context.getBean("genericDAO");   
+        List<String[]> tableInfo = genericDAO.getTableInfo(query);
+        
+        return tableInfo;
+        
+    }
+    
     public static void loggerTest(Logger logger)
     {
         logger.error("error");

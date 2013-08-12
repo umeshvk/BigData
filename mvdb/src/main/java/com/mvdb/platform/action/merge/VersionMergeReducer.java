@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import com.mvdb.etl.actions.ActionUtils;
 import com.mvdb.etl.data.GenericDataRecord;
 import com.mvdb.etl.data.GenericIdRecord;
+import com.mvdb.etl.data.Metadata;
 import com.mvdb.platform.action.MergeKey;
 import com.mvdb.platform.data.MultiVersionRecord;
 
@@ -33,11 +34,13 @@ public class VersionMergeReducer extends Reducer<MergeKey, BytesWritable, Text, 
     
     MultipleOutputs<Text, BytesWritable> mos;
     SortedMap<String, TimestampData> sortedMap; 
+    SortedMap<String, Metadata> metadataSortedMap; 
     List<String> sortedTimeStampList; 
     public void setup(Context context)
     {
          mos = new MultipleOutputs<Text, BytesWritable>(context);
          sortedMap = new TreeMap<String, TimestampData>();
+         metadataSortedMap = new TreeMap<String, Metadata>();
          String timeStampCSV = context.getConfiguration().get("timeStampCSV");
          String[] timeStampArray = timeStampCSV.split(",");
          sortedTimeStampList = Arrays.asList(timeStampArray);
@@ -48,12 +51,14 @@ public class VersionMergeReducer extends Reducer<MergeKey, BytesWritable, Text, 
     {
         mos.close();
         sortedMap.clear();
+        metadataSortedMap.clear();
     }
     
     public void reduce(MergeKey mergeKey, Iterable<BytesWritable> values, Context context) throws IOException,
             InterruptedException
     {
         sortedMap.clear();
+        metadataSortedMap.clear();
         
         for(String ts : this.sortedTimeStampList) { 
             TimestampData timestampData = sortedMap.get(ts);
@@ -67,6 +72,100 @@ public class VersionMergeReducer extends Reducer<MergeKey, BytesWritable, Text, 
 
         
         System.out.println(ManagementFactory.getRuntimeMXBean().getName());
+        
+        if(mergeKey.getTable().startsWith("schema"))
+        {
+            writeSchemaRecord(mergeKey, values, context);
+        } else { 
+            writeDataRecord(mergeKey, values, context);
+        }
+    }
+
+    private void writeSchemaRecord(MergeKey mergeKey, Iterable<BytesWritable> values,
+            org.apache.hadoop.mapreduce.Reducer.Context context) throws IOException, InterruptedException
+    {
+        MultiVersionRecord mvr = getSchemaMVR(mergeKey, values, context);               
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(bos);
+        oos.writeObject(mvr);
+        oos.flush();
+        BytesWritable bwOut = new BytesWritable(bos.toByteArray());            
+        //context.write(new Text(mergeKey.getId()), bwOut);
+        mos.write(mergeKey.getTable(), new Text(mergeKey.getId()), bwOut);
+        
+    }
+
+    private void writeDataRecord(MergeKey mergeKey, Iterable<BytesWritable> values, Context context) throws IOException, InterruptedException
+    {
+        MultiVersionRecord mvr = getDataMVR(mergeKey, values, context);               
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(bos);
+        oos.writeObject(mvr);
+        oos.flush();
+        BytesWritable bwOut = new BytesWritable(bos.toByteArray());            
+        //context.write(new Text(mergeKey.getId()), bwOut);
+        mos.write(mergeKey.getTable(), new Text(mergeKey.getId()), bwOut);
+        
+    }
+
+    private MultiVersionRecord getSchemaMVR(MergeKey mergeKey, Iterable<BytesWritable> values, Context context) throws IOException
+    {
+        Iterator<BytesWritable> itr = values.iterator();
+        //List<IdRecord> gdrList = new ArrayList<IdRecord>();
+        MultiVersionRecord mvr = null;
+        while (itr.hasNext())
+        {
+            BytesWritable bw = itr.next();
+
+            byte[] bytes = bw.getBytes();
+            ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+            ObjectInputStream ois = new ObjectInputStream(bis);
+
+            try
+            {
+                Object record = ois.readObject();
+                if(record instanceof MultiVersionRecord)
+                {
+                    mvr = (MultiVersionRecord)record;
+                    System.out.println(mvr.toString());
+                }
+                else if(record instanceof Metadata)
+                {
+                    Metadata metadata = (Metadata)record;
+                    metadataSortedMap.put(metadata.getRefreshTimeStamp(), metadata);
+                    System.out.println(metadata.toString());
+                } else 
+                { 
+                    int ii =0; 
+                    int jj = 0; 
+                }
+                
+            } catch (ClassNotFoundException e)
+            {
+                e.printStackTrace();
+            }
+
+        }
+        
+        if(mvr == null) { 
+            mvr = new MultiVersionRecord();
+        }                
+
+        Iterator<String> timestampKeysSetIter = metadataSortedMap.keySet().iterator();
+        while(timestampKeysSetIter.hasNext())
+        {
+            String timestamp = timestampKeysSetIter.next(); 
+            System.out.println("ts:" + timestamp);
+            System.out.println("MergeKey:" + mergeKey.toString());
+            Metadata metadata = metadataSortedMap.get(timestamp);            
+            mvr.addLatestVersion(metadata);  
+        }
+        
+        return mvr;
+    }
+    
+    private MultiVersionRecord getDataMVR(MergeKey mergeKey, Iterable<BytesWritable> values, Context context) throws IOException
+    {
         Iterator<BytesWritable> itr = values.iterator();
         //List<IdRecord> gdrList = new ArrayList<IdRecord>();
         MultiVersionRecord mvr = null;
@@ -87,6 +186,7 @@ public class VersionMergeReducer extends Reducer<MergeKey, BytesWritable, Text, 
                     mvrCount++;
                     if(mvrCount > 1)
                     {
+                        context.getCounter(VersionMergeCounter.ERROR_COUNTER).increment(1);
                         System.out.println("!!!ERROR!!!: Found two or more MultiVersionRecords in reducer for key:" + mergeKey.toString());
                         System.out.println(mvr.toString());
                     }
@@ -146,6 +246,7 @@ public class VersionMergeReducer extends Reducer<MergeKey, BytesWritable, Text, 
                 //Majority of rows on a given day will not be updated. This is the most likely scenario.
                 if(mvr.getVersionCount() == 0)
                 {
+                    context.getCounter(VersionMergeCounter.ERROR_COUNTER).increment(1);
                     System.out.println("!!!ERROR!!!: Impossible event unless it is the first time an entry is created for a specific record id. No existing record but an id was found for key:" + mergeKey.toString());
                     System.out.println(mvr.toString());
                 } else { 
@@ -193,10 +294,11 @@ public class VersionMergeReducer extends Reducer<MergeKey, BytesWritable, Text, 
                 
                 if(mvr.getVersionCount() == 0)
                 {
+                    context.getCounter(VersionMergeCounter.ERROR_COUNTER).increment(1);
                     System.out.println("!!!ERROR!!!: Impossible event unless there is a bug. Found an empty MultiVersionRecord for key:" + mergeKey.toString());
                     System.out.println(mvr.toString());
                 }
-                GenericDataRecord lastGDR = mvr.getVersion(mvr.getVersionCount()-1);
+                GenericDataRecord lastGDR = (GenericDataRecord)mvr.getVersion(mvr.getVersionCount()-1);
                 
                 if(lastGDR.isDeleted() == false)
                 {
@@ -210,15 +312,7 @@ public class VersionMergeReducer extends Reducer<MergeKey, BytesWritable, Text, 
                 
             }
         }
-        
-        
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        ObjectOutputStream oos = new ObjectOutputStream(bos);
-        oos.writeObject(mvr);
-        oos.flush();
-        BytesWritable bwOut = new BytesWritable(bos.toByteArray());            
-        //context.write(new Text(mergeKey.getId()), bwOut);
-        mos.write(mergeKey.getTable(), new Text(mergeKey.getId()), bwOut);
+        return mvr;
     }
 }
 

@@ -8,6 +8,7 @@ import java.io.ObjectOutputStream;
 
 import com.mvdb.etl.data.DataRecord;
 import com.mvdb.etl.data.IdRecord;
+import com.mvdb.etl.data.Metadata;
 
 public class BinaryGenericConsumer implements GenericConsumer
 {
@@ -113,6 +114,16 @@ public class BinaryGenericConsumer implements GenericConsumer
         {
             throw new ConsumerException("Unable to flush for output file:" + file.getAbsolutePath(), ioe);
         }
+    }
+
+    @Override
+    public boolean consume(Metadata metadata)
+    {
+        if(true)
+        {
+            throw new RuntimeException("Not Implemeted Yet");
+        }
+        return false;
     }
 
 

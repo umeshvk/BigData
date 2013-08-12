@@ -27,6 +27,7 @@ import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoUtils;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.slf4j.Logger;
@@ -57,18 +58,12 @@ public class TimeSliceSerde implements SerDe
     private static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     
     Date sliceDate = null;
-    /**
-     * @param args
-     */
-    public static void main(String[] args)
-    {
-        // TODO Auto-generated method stub
 
-    }
 
     @Override
     public Object deserialize(Writable blob) throws SerDeException
     {
+
         System.out.println("deserialize");
         BytesWritable bw = (BytesWritable) blob;
         // inBarrStr.reset(data.getBytes(), 0, data.getLength());
@@ -87,15 +82,19 @@ public class TimeSliceSerde implements SerDe
             Date dateSlice = sliceDate != null ? sliceDate : new Date();             
             System.out.println("dateSlice:" + dateSlice);
             GenericDataRecord record = null; 
-            GenericDataRecord result = mv.getVersion(mv.getVersionCount()-1);
+            GenericDataRecord result = (GenericDataRecord)mv.getVersion(mv.getVersionCount()-1);
             for(int i = mv.getVersionCount()-2;i>=0;i--)
             {
+                if(result.isDeleted())
+                {
+                    return null;
+                }
                 if(result.getTimestampLongValue() <= dateSlice.getTime())
                 {
                     break;
                 }
                 System.out.println("result before merge:" + result.toString());
-                record = mv.getVersion(i);
+                record = (GenericDataRecord)mv.getVersion(i);
                 System.out.println("record to merge:" + record.toString());
                 result.merge(record);
                 System.out.println("result after merge:" + result.toString());
@@ -115,7 +114,9 @@ public class TimeSliceSerde implements SerDe
                     //Table does not care about this data.
                     continue;
                 }
-                Object tv = translate(dataMap.get(key));
+                Object value = dataMap.get(key);
+                System.out.println("key:" + key + ", value:" + value);
+                Object tv = translate(value);
                 //System.out.println(String.format(">>>>>%s %d %s", key, pos, tv));
                 
                 row.set(pos, tv);
@@ -126,18 +127,12 @@ public class TimeSliceSerde implements SerDe
         }
         catch (ClassNotFoundException e)
         {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
-/*
- * mvdb_id string, sale_code int, note string, create_time date, update_time date
- */
-//        for (int i = 0; i < columnNames.size(); i++)
-//        {
-//            // row.set(i, deserializeField(tbIn, columnTypes.get(i),
-//            // row.get(i)));
-//            row.set(i, new IntWritable(1));
-//        }
+        catch (Throwable e)
+        {
+            e.printStackTrace();
+        }
 
         return row;
     }
@@ -146,14 +141,14 @@ public class TimeSliceSerde implements SerDe
     private Object translate(Object value)
     {
         Object newValue = null; 
-        //System.out.println("Translation Input:" + value); 
+        System.out.println("Translation Input:" + value); 
         if(value instanceof java.lang.Integer)
         {
             newValue = new IntWritable((Integer)value);
         }
         else if(value instanceof java.lang.Long)
         {
-            newValue = new IntWritable(((Long)value).intValue());
+            newValue = new LongWritable(((Long)value).intValue());
         }
         else if(value instanceof java.util.Date)
         {

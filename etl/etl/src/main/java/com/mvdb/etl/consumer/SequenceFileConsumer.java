@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import com.mvdb.etl.data.DataRecord;
 import com.mvdb.etl.data.IdRecord;
+import com.mvdb.etl.data.Metadata;
 
 public class SequenceFileConsumer implements GenericConsumer
 {
@@ -127,6 +128,38 @@ public class SequenceFileConsumer implements GenericConsumer
             IOUtils.closeStream(writer);
         }
         return true;
+    }
+
+
+    @Override
+    public boolean consume(Metadata metadata)
+    {
+        if (done == true)
+        {
+            throw new ConsumerException("Consumer closed for output file:" + file.getAbsolutePath());
+        }
+        if (good == false)
+        {
+            throw new ConsumerException("Check log for prior error. Consumer unusable for output file:"
+                    + file.getAbsolutePath());
+        }
+
+        try
+        {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(bos);
+            oos.writeObject(metadata);
+            oos.flush();
+            BytesWritable value = new BytesWritable(bos.toByteArray());
+            Text key = new Text(metadata.getTableName());
+            writer.append(key, value);
+            return true;
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+            throw new ConsumerException("Consumer failed to consume for output file:" + file.getAbsolutePath()
+                    + ", and Metadata:" + metadata.toString());
+        }
     }
 
 }

@@ -27,11 +27,10 @@ public class HiveJdbcClient3
             e.printStackTrace();
             System.exit(1);
         }
-        Connection con = DriverManager.getConnection("jdbc:hive://localhost:10000/default", "", "");
+        Connection con = DriverManager.getConnection("jdbc:hive://localhost:10000/mv1", "", "");
         Statement stmt = con.createStatement();
-        String tableName = "testHiveDriverTable";
-        stmt.executeQuery("drop table " + tableName);
-        ResultSet res = stmt.executeQuery("create table " + tableName + " (key int, value string)");
+        String tableName = "orders";
+        ResultSet res = null;
         // show tables
         String sql = "show tables '" + tableName + "'";
         System.out.println("Running: " + sql);
@@ -54,14 +53,11 @@ public class HiveJdbcClient3
         stmt.executeQuery("add jar /home/umesh/work/BigData/mvdb/target/mvdb-0.0.1.jar");
         stmt.executeQuery("add jar /home/umesh/ops/hive-0.11.0-bin/lib/hive-contrib-0.11.0.jar");
         long t1 =  new Date().getTime();
-        
-        
-        
 
         
         try { 
             stmt.executeQuery("set sliceDate=2003-01-19 00:00:00;");
-            for(int i=0;i<1;i++)
+            for(int i=0;i<2;i++)
             {
                 testSelect("0000000000000007", stmt);
             }
@@ -70,14 +66,6 @@ public class HiveJdbcClient3
             System.out.println("Time Taken in secs:" + ((double)(t2-t1))/1000);
         }
 
-        // regular hive query
-        sql = "select count(1) from " + tableName;
-        System.out.println("Running: " + sql);
-        res = stmt.executeQuery(sql);
-        while (res.next())
-        {
-            System.out.println(res.getString(1));
-        }
 
         /*
          * // load data into table // NOTE: filepath has to be local to the hive

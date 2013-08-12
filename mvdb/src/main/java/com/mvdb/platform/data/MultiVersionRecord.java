@@ -9,12 +9,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import com.mvdb.etl.data.GenericDataRecord;
+import com.mvdb.etl.data.AnyRecord;
 
 public class MultiVersionRecord implements Externalizable
 {
     private static final long serialVersionUID = 1L;
-    List<GenericDataRecord> versionList;
+    List<AnyRecord> versionList;
       
     public String toString()
     {
@@ -22,7 +22,7 @@ public class MultiVersionRecord implements Externalizable
         sb.append("[");
         sb.append("{\"count\" : " + versionList.size() + "}, ");
         String nl = System.getProperty("line.separator");
-        for(GenericDataRecord gdr : versionList)
+        for(AnyRecord gdr : versionList)
         {
             sb.append(nl);
             sb.append(gdr);
@@ -37,10 +37,19 @@ public class MultiVersionRecord implements Externalizable
     
     public MultiVersionRecord()
     {
-        versionList = new ArrayList<GenericDataRecord>();               
+        versionList = new ArrayList<AnyRecord>();               
     }
         
-    public void addLatestVersion(GenericDataRecord latestVersion)
+    public AnyRecord getLatestVersion()
+    {
+        if(versionList.size() == 0)
+        {
+            return null; 
+        }
+        return versionList.get(versionList.size()-1);
+    }
+    
+    public void addLatestVersion(AnyRecord latestVersion)
     {
         addLatestVersion(versionList, latestVersion);
     }
@@ -50,12 +59,12 @@ public class MultiVersionRecord implements Externalizable
         return versionList.size(); 
     }
     
-    public GenericDataRecord getVersion(int pos)
+    public AnyRecord getVersion(int pos)
     {
         return versionList.get(pos);
     }
     
-    private void addLatestVersion(List<GenericDataRecord> currentList, GenericDataRecord latestVersion)
+    private void addLatestVersion(List<AnyRecord> currentList, AnyRecord latestVersion)
     {
         if(currentList.size() == 0)
         {
@@ -63,7 +72,7 @@ public class MultiVersionRecord implements Externalizable
             return;
         }
         
-        GenericDataRecord lastVersion = currentList.get(currentList.size()-1);
+        AnyRecord lastVersion = currentList.get(currentList.size()-1);
         Map<String, Object> map = latestVersion.getDataMap();
         Iterator<String> iter = map.keySet().iterator();
         while(iter.hasNext()) { 
@@ -81,7 +90,7 @@ public class MultiVersionRecord implements Externalizable
         int size = in.readInt();
         for(int i=0;i<size;i++)
         {
-            GenericDataRecord recordVersion = (GenericDataRecord)in.readObject();
+            AnyRecord recordVersion = (AnyRecord)in.readObject();
             versionList.add(recordVersion);
         }
     }
@@ -93,7 +102,7 @@ public class MultiVersionRecord implements Externalizable
         out.writeInt(size);
         for(int i=0;i<size;i++)
         {
-            GenericDataRecord recordVersion = versionList.get(i);
+            AnyRecord recordVersion = versionList.get(i);
             out.writeObject(recordVersion);
         }
     }

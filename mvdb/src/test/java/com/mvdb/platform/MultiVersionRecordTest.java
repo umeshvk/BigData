@@ -57,7 +57,7 @@ public class MultiVersionRecordTest extends TestCase
         MultiVersionRecord multiVersionRecord = new MultiVersionRecord();
         // Begin Test for adding first record
         multiVersionRecord.addLatestVersion(genericDataRecord1);
-        GenericDataRecord ultimateVersion = multiVersionRecord.getVersion(0);
+        GenericDataRecord ultimateVersion = (GenericDataRecord)multiVersionRecord.getVersion(0);
         Map<String, Object> ultimateVersionMap = ultimateVersion.getDataMap();
         assertTrue(ultimateVersionMap.get("f1").equals(10));
         assertTrue(ultimateVersionMap.get("f2").equals(20));
@@ -67,14 +67,14 @@ public class MultiVersionRecordTest extends TestCase
 
         // Begin Test for adding second record
         multiVersionRecord.addLatestVersion(genericDataRecord2);
-        GenericDataRecord penultimateVersion = multiVersionRecord.getVersion(0);
+        GenericDataRecord penultimateVersion = (GenericDataRecord)multiVersionRecord.getVersion(0);
         Map<String, Object> penultimateVersionMap = penultimateVersion.getDataMap();
         assertTrue(penultimateVersionMap.get("f1").equals(10));
         assertTrue(penultimateVersionMap.get("f2") == null);
         assertTrue(penultimateVersionMap.get("f3").equals(30));
         assertTrue(penultimateVersionMap.get("f4") == null);
 
-        ultimateVersion = multiVersionRecord.getVersion(1);
+        ultimateVersion = (GenericDataRecord)multiVersionRecord.getVersion(1);
         ultimateVersionMap = ultimateVersion.getDataMap();
         assertTrue(ultimateVersionMap.get("f1").equals(11));
         assertTrue(ultimateVersionMap.get("f2").equals(20));

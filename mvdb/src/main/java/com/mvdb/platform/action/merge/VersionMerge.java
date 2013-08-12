@@ -15,6 +15,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Counters;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
@@ -24,9 +25,13 @@ import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
 
 import com.mvdb.etl.actions.ActionUtils;
 import com.mvdb.etl.actions.ConfigurationKeys;
+import com.mvdb.etl.actions.Top;
+import com.mvdb.etl.dao.GenericDAO;
+import com.mvdb.etl.data.Metadata;
 import com.mvdb.platform.action.MergeKey;
 
 public class VersionMerge
@@ -38,8 +43,9 @@ public class VersionMerge
 
         ActionUtils.setUpInitFileProperty();
 
-        Configuration conf = new Configuration();
-        String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
+        org.apache.hadoop.conf.Configuration configuration = new org.apache.hadoop.conf.Configuration();
+        configuration.addResource(new Path("/home/umesh/ops/hadoop-1.2.0/conf/core-site.xml"));
+        String[] otherArgs = new GenericOptionsParser(configuration, args).getRemainingArgs();
         //Also add  lastMergedTimeStamp and  mergeUptoTimestamp and passive db name which would be mv1 or mv2
         if (otherArgs.length != 1)
         {
@@ -72,10 +78,10 @@ public class VersionMerge
             System.exit(0);
         }
         
-        org.apache.hadoop.conf.Configuration conf1 = new org.apache.hadoop.conf.Configuration();
-        conf1.addResource(new Path("/home/umesh/ops/hadoop-1.2.0/conf/core-site.xml"));
-        FileSystem hdfsFileSystem = FileSystem.get(conf1);
+
+        FileSystem hdfsFileSystem = FileSystem.get(configuration);
         
+//        testMD(conf1);
         Path topPath = new Path(customerDirectory);
         
         
@@ -109,12 +115,14 @@ public class VersionMerge
                   continue;
             }
             String fn = filename.substring(filename.indexOf('-') + 1, filename.lastIndexOf(".dat"));
+            System.out.println(">>>table:" + fn);
             tableNameSet.add(fn);
+            tableNameSet.add("schema" + fn);
         }
         
         String timeStampCSV = getCSV(timeStampSet, "\\d{14}");
-        conf.set("timeStampCSV", timeStampCSV);
-        Job job = new Job(conf, "versionmerge");
+        configuration.set("timeStampCSV", timeStampCSV);
+        Job job = new Job(configuration, "versionmerge");
         job.setJarByClass(VersionMerge.class);
         job.setMapperClass(VersionMergeMapper.class);
         job.setReducerClass(VersionMergeReducer.class);
@@ -129,6 +137,7 @@ public class VersionMerge
 
         for(Path inputPath : inputPaths)
         {
+            System.out.println("inputPath:" + inputPath);
             FileInputFormat.addInputPath(job, inputPath);
         }
         FileOutputFormat.setOutputPath(job, tempDbPath);
@@ -137,9 +146,22 @@ public class VersionMerge
         for(String table: tableNameSet)
         {
             MultipleOutputs.addNamedOutput(job, table, SequenceFileOutputFormat.class , Text.class, BytesWritable.class);
+            //MultipleOutputs.addNamedOutput(job, "schema" + table, SequenceFileOutputFormat.class , Text.class, BytesWritable.class);
         }
-        boolean success = job.waitForCompletion(true);     
+        boolean success = job.waitForCompletion(true); 
+        
+        Counters counters = job.getCounters();
+        long errorCount = counters.findCounter(VersionMergeCounter.ERROR_COUNTER).getValue();
+        System.out.println("errorCount:" + errorCount);
+        int counterCount = counters.countCounters();
+        
         System.out.println("Success:" + success);
+        
+        
+        organizeForHive(hdfsFileSystem, tempDbPath, tableNameSet);
+        
+        
+        
         System.out.println(ManagementFactory.getRuntimeMXBean().getName());
         if(success && lastDirName != null)
         {
@@ -160,6 +182,7 @@ public class VersionMerge
             System.exit(4);
         }
         
+        
         success = hdfsFileSystem.rename(passiveDbPath, passiveDBBackupPath);
         if(success == false) 
         {
@@ -179,6 +202,47 @@ public class VersionMerge
         System.exit(0);
     }
     
+    private static void testMD(Configuration conf)
+    {
+        ApplicationContext context = Top.getContext();
+        GenericDAO genericDAO = (GenericDAO)context.getBean("genericDAO");
+                
+        //Metadata md = genericDAO.readMetadata(new File("/home/umesh/.mvdb/etl/data/alpha/20030115050607/schema-orderlineitem.dat").toURI().toString(), conf1);
+        Metadata md = genericDAO.readMetadata("hdfs://localhost:9000/data/alpha/20030115050607/schema-orderlineitem.dat", conf);
+        int ii =0; 
+        int jj = ii; 
+        
+    }
+
+    private static void organizeForHive(FileSystem hdfsFileSystem, Path tempDbPath, Set<String> tableNameSet) throws IOException
+    {
+        for(String tableName : tableNameSet)
+        {
+            Path tableDir = new Path(tempDbPath, tableName);            
+            boolean success = hdfsFileSystem.mkdirs(tableDir);
+            if(success == false)
+            {
+                System.err.println(String.format("VersionMerge: Uanble to create table %s in directory %s. Human intervention required.", tableName, tableDir.getName()));
+                System.exit(10);
+            }
+        }
+                
+        FileStatus[] fsArray = hdfsFileSystem.listStatus(tempDbPath);
+        for(FileStatus fileStatus: fsArray)
+        {
+            Path path = fileStatus.getPath(); 
+            String fileName = path.getName();
+            String[] tokens = fileName.split("-r-");
+            if(tokens.length == 2)
+            {
+                Path destDirPath = new Path(tempDbPath, tokens[0]);
+                Path dest = new Path(destDirPath, fileName);
+                hdfsFileSystem.rename(path, dest);
+            }
+        }
+        
+    }
+
     private static String getLastDirName(Path[] inputPaths)
     {
         String lastTimestampDirName = "00000000000000";     
@@ -226,38 +290,67 @@ public class VersionMerge
         }
         List<Path> pathList = new ArrayList<Path>();        
         buildInputPathList(hdfsFileSystem, topPath, pathList, lastMergedDirName, lastcopiedDirName);
-        pathList.add(passiveDbPath);
+        buildDBInputPathList(hdfsFileSystem, passiveDbPath, pathList);
+        //pathList.add(passiveDbPath);
         Path[] inputPaths = pathList.toArray(new Path[0]);        
         return inputPaths;
     }
 
-    private static void buildInputPathList(FileSystem fileSystem, Path topPath, List<Path> pathList, String lastMergedDirName, String lastcopiedDirName) throws IOException
+    private static void buildInputPathList(FileSystem fileSystem, Path thePathToProcess, List<Path> pathList, String lastMergedDirName, String lastcopiedDirName) throws IOException
     {
-        FileStatus topPathStatus = fileSystem.getFileStatus(topPath);
+        FileStatus topPathStatus = fileSystem.getFileStatus(thePathToProcess);
         if(topPathStatus.isDir() == false)
         {
-            String topPathFullName = topPath.toString(); 
+            //This is a file
+            String topPathFullName = thePathToProcess.toString(); 
             String[] tokens = topPathFullName.split("/");
             String fileName = tokens[tokens.length-1];
             if((fileName.startsWith("data-") && fileName.endsWith(".dat")) ||
-                    (fileName.startsWith("ids-") && fileName.endsWith(".dat")) )
+                    (fileName.startsWith("ids-") && fileName.endsWith(".dat")) ||
+                    (fileName.startsWith("schema-") && fileName.endsWith(".dat")))
             {
                 String timeStamp = tokens[tokens.length-2];
                 if(timeStamp.compareTo(lastMergedDirName) > 0 && timeStamp.compareTo(lastcopiedDirName) <= 0) 
                 {
-                    pathList.add(topPath);
+                    pathList.add(thePathToProcess);
                 }
             }
             return; //This is a leaf
         }
         
-        FileStatus[] fsArray = fileSystem.listStatus(topPath);
+        FileStatus[] fsArray = fileSystem.listStatus(thePathToProcess);
         for(FileStatus fileStatus: fsArray)
         {
             Path path = fileStatus.getPath();            
             buildInputPathList(fileSystem, path, pathList, lastMergedDirName, lastcopiedDirName);          
         }
     }
+    
+    private static void buildDBInputPathList(FileSystem fileSystem, Path thePathToProcess, List<Path> pathList) throws IOException
+    {
+        FileStatus topPathStatus = fileSystem.getFileStatus(thePathToProcess);
+        if(topPathStatus.isDir() == false)
+        {
+            //This is a file
+            String topPathFullName = thePathToProcess.toString(); 
+            String[] tokens = topPathFullName.split("/");
+            String fileName = tokens[tokens.length-1];
+            if((fileName.contains("-r-") == true &&  fileName.contains("part-r-") == false))
+            {
+                pathList.add(thePathToProcess);
+            }
+            return; //This is a leaf
+        }
+        
+        FileStatus[] fsArray = fileSystem.listStatus(thePathToProcess);
+        for(FileStatus fileStatus: fsArray)
+        {
+            Path path = fileStatus.getPath();            
+            buildDBInputPathList(fileSystem, path, pathList);          
+        }
+    }
+    
+
     
 }
 
