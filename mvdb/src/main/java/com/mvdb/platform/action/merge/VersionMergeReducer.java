@@ -306,7 +306,8 @@ public class VersionMergeReducer extends Reducer<MergeKey, BytesWritable, Text, 
                     deleteRecord.setRefreshTimeStamp(timestamp);
                     deleteRecord.setMvdbKeyValue(lastGDR.getMvdbKeyValue());
                     deleteRecord.setDeleted(true);                   
-                    deleteRecord.setMvdbUpdateTime(ActionUtils.getDate(timestamp));   
+                    deleteRecord.setMvdbUpdateTime(ActionUtils.getDate(timestamp)); 
+                    deleteRecord.setTimeStampLongValue(ActionUtils.getDate(timestamp).getTime());
                     mvr.addLatestVersion(deleteRecord);
                 }
                 

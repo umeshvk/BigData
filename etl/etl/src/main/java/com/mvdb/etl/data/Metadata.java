@@ -13,13 +13,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.hadoop.fs.Path;
-import org.springframework.context.ApplicationContext;
-
-import com.mvdb.etl.actions.ActionUtils;
-import com.mvdb.etl.actions.Top;
-import com.mvdb.etl.dao.GenericDAO;
-
 public class Metadata implements AnyRecord, Externalizable, Comparable<Metadata>
 {
     private static final long  serialVersionUID  = 1L;

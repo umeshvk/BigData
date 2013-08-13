@@ -19,6 +19,7 @@ public class GenericDataRecord implements DataRecord
     //Change this to "id". When creating the data feed always add a column called id to contain the key. 
     private static String ID = "mvdb_id"; 
     private static String MVDB_UPDATE_TIME_COLUMN = "mvdb_update_time"; 
+    public static final String MVDB_IS_DELETED_COLUMN = "mvdb_is_deleted"; 
 
     Map<String, Object> dataMap;
     String mvdbKeyValue; 
@@ -39,6 +40,7 @@ public class GenericDataRecord implements DataRecord
         Object originalUpdateTimeValue  = dataMap.get(originalUpdateTimeColumn);
         this.mvdbUpdateTime = mvdbUpdateTimeMaker.makeMvdbUpdateTime(originalUpdateTimeValue);
         dataMap.put(MVDB_UPDATE_TIME_COLUMN, mvdbUpdateTime);
+        dataMap.put(MVDB_IS_DELETED_COLUMN, false);
 
     }
     
@@ -51,7 +53,7 @@ public class GenericDataRecord implements DataRecord
         {
             String key = keysIter.next();
             Object value = otherDataMap.get(key);
-            System.out.println("Override Values:" + "key:" + key + ", value:" + value);
+            //System.out.println("Override Values:" + "key:" + key + ", value:" + value);
             dataMap.put(key, value);
         }
     }
@@ -99,6 +101,10 @@ public class GenericDataRecord implements DataRecord
         return ((Date)dataMap.get(MVDB_UPDATE_TIME_COLUMN)).getTime();
     }
     
+    public void setTimeStampLongValue(long time)
+    {
+        dataMap.put(MVDB_UPDATE_TIME_COLUMN, new Date(time));
+    }
 
 
     public Map<String, Object> getDataMap()
@@ -256,6 +262,7 @@ public class GenericDataRecord implements DataRecord
     public void setDeleted(boolean deleted)
     {
         this.deleted = deleted;
+        this.dataMap.put(MVDB_IS_DELETED_COLUMN, true);
     }
     
 }

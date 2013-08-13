@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import com.mvdb.etl.actions.ActionUtils;
 import com.mvdb.etl.data.ColumnMetadata;
+import com.mvdb.etl.data.GenericDataRecord;
 import com.mvdb.etl.data.Metadata;
 import com.mvdb.platform.data.MultiVersionRecord;
 
@@ -111,8 +112,120 @@ public class HiveJdbcQueryTesting
         String customerName = new Path(customerDirectory).getName();
         
         String activeDBName = ActionUtils.getActiveDBName(customerName);
-       
         
+        try
+        {
+            Class.forName(driverName);
+        } catch (ClassNotFoundException e)
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            System.exit(1);
+        }
+        Connection con = DriverManager.getConnection("jdbc:hive://localhost:10000/" + "default", "", "");
+        Statement stmt = con.createStatement();
+        stmt.executeQuery("add jar /home/umesh/work/BigData/etl/etl/target/etl-0.0.1.jar");
+        stmt.executeQuery("add jar /home/umesh/work/BigData/mvdb/target/mvdb-0.0.1.jar");
+        stmt.executeQuery("add jar /home/umesh/ops/hive-0.11.0-bin/lib/hive-contrib-0.11.0.jar");
+        
+        dropTables("mv1", tables, stmt);
+        createTables("mv1", customerDirectory, activeDBName, configuration, customerName, tables, stmt);
+        dropTables("mv2", tables, stmt);
+        createTables("mv2", customerDirectory, activeDBName, configuration, customerName, tables, stmt);
+        
+        showTables("mv1", stmt);
+        describeTables("mv1", tables, stmt);
+        showTables("mv2", stmt);
+        describeTables("mv2", tables, stmt);
+        
+        showTableRecords("mv1", stmt);
+        showTableRecords("mv2", stmt);
+        
+    }
+
+    private static void showTableRecords(String databaseName, Statement stmt) throws SQLException
+    {
+        stmt.executeQuery("use " + databaseName);
+        ResultSet res = null;
+        String sql = "show tables";
+        System.out.println("Running: " + sql);
+        res = stmt.executeQuery(sql);
+        while (res.next())
+        {
+            String tableName = res.getString(1);
+            showRecords(databaseName, tableName, null, stmt);
+        }
+    }
+    
+    //timestamp =  2003-01-19 00:00:00
+    //stmt.executeQuery("set sliceDate=2003-01-19 00:00:00;");
+    private static void showRecords(String databaseName, String tableName, String timestamp, Statement stmt) throws SQLException
+    {
+        long t1 =  new Date().getTime();
+        try { 
+            stmt.executeQuery("set sliceDate=" + timestamp + ";");
+            System.out.println("Display Records for Table:" + tableName);
+            displayRecords(tableName, stmt);
+        }finally{ 
+            long t2 =  new Date().getTime();
+            System.out.println("Time Taken in secs:" + ((double)(t2-t1))/1000);
+        }
+    }
+
+    private static void displayRecords(String tableName, Statement stmt) throws SQLException
+    {
+        ResultSet res = stmt.executeQuery("select * from " + tableName);
+        int colCount = res.getMetaData().getColumnCount();
+        while (res.next())
+        {
+            for(int c=1;c<=colCount;c++)
+            {
+                System.out.print(res.getString(c) + "\t");
+            }
+            System.out.println();
+        }
+        
+    }
+
+    // show tables
+    private static void showTables(String databaseName,  Statement stmt) throws SQLException
+    {
+        stmt.executeQuery("use " + databaseName);
+        ResultSet res = null;
+        String sql = "show tables";
+        System.out.println("Running: " + sql);
+        res = stmt.executeQuery(sql);
+        while (res.next())
+        {
+            System.out.println(res.getString(1));
+        }
+    }
+    
+    private static void describeTables(String databaseName,  String[] tables, Statement stmt) throws SQLException
+    {
+        stmt.executeQuery("use " + databaseName);
+        ResultSet res = null;
+        for(String tableName : tables)
+        {
+            tableName = tableName.replace("-", "");
+            tableName = tableName.replace("_", "");
+            String sql = "describe " + tableName;
+            res = stmt.executeQuery(sql);
+            int colCount = res.getMetaData().getColumnCount();
+            while (res.next())
+            {
+                for(int c=1;c<=colCount;c++)
+                {
+                    System.out.print(res.getString(c) + "\t");
+                }
+                System.out.println();
+            }
+            
+        }
+    }
+
+    private static void createTables(String databaseName, String customerDirectory, String activeDBName, Configuration configuration, String customerName, String[] tables, Statement stmt) throws SQLException
+    {
         List<String> createTableQueryList = new ArrayList<String>();
         for(String tableName : tables)
         {
@@ -126,59 +239,12 @@ public class HiveJdbcQueryTesting
             createTableQueryList.add(tableCreationQuery);
             System.out.println(tableCreationQuery);
         }
-        //System.exit(1);
         
-//        File snaphostDirectory = new File("/home/umesh/.mvdb/etl/data/alpha/20030125050607");
-//        
-//        List<ColumnMetadata> mdl = ActionUtils.getTableInfo3(snaphostDirectory, "orders", configuration);
-//        int ii =0; 
-        
-        try
-        {
-            Class.forName(driverName);
-        } catch (ClassNotFoundException e)
-        {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            System.exit(1);
-        }
-        Connection con = DriverManager.getConnection("jdbc:hive://localhost:10000/" + "mv3", "", "");
-        Statement stmt = con.createStatement();
-        stmt.executeQuery("use mv1");
-        ResultSet res = null;
-        // show tables
-        String sql = "show tables";
-        System.out.println("Running: " + sql);
-        res = stmt.executeQuery(sql);
-        while (res.next())
-        {
-            System.out.println(res.getString(1));
-        }
-        /*
-        // describe table
-        sql = "describe " + tableName;
-        System.out.println("Running: " + sql);
-        res = stmt.executeQuery(sql);
-        while (res.next())
-        {
-            System.out.println(res.getString(1) + "\t" + res.getString(2));
-        }
-        */
+        stmt.executeQuery("use " + databaseName);
 
         
-        stmt.executeQuery("add jar /home/umesh/work/BigData/etl/etl/target/etl-0.0.1.jar");
-        stmt.executeQuery("add jar /home/umesh/work/BigData/mvdb/target/mvdb-0.0.1.jar");
-        stmt.executeQuery("add jar /home/umesh/ops/hive-0.11.0-bin/lib/hive-contrib-0.11.0.jar");
-        
-        res = stmt.executeQuery("select order_id from orders");
-        while(res.next())
-        {
-            System.out.println(res.getObject(1));
-        }
-        System.exit(1);
-        long t1 =  new Date().getTime();
-
         try { 
+
             for(String createQuery : createTableQueryList)
             {
                 stmt.executeQuery(createQuery);
@@ -189,42 +255,39 @@ public class HiveJdbcQueryTesting
         } finally { 
             //
         }
-        System.exit(0);
+
         
-        try { 
-            stmt.executeQuery("set sliceDate=2003-01-19 00:00:00;");
-            for(int i=0;i<2;i++)
-            {
-                testSelect("0000000000000007", stmt);
-            }
-        }finally{ 
-            long t2 =  new Date().getTime();
-            System.out.println("Time Taken in secs:" + ((double)(t2-t1))/1000);
-        }
-
-
-        /*
-         * // load data into table // NOTE: filepath has to be local to the hive
-         * server // NOTE: /tmp/a.txt is a ctrl-A separated file with two fields
-         * per line
-         * 
-         * 
-         * String filepath = "/tmp/a.txt"; sql = "load data local inpath '" +
-         * filepath + "' into table " + tableName;
-         * System.out.println("Running: " + sql); res = stmt.executeQuery(sql);
-         * 
-         * // select * query sql = "select * from " + tableName;
-         * System.out.println("Running: " + sql); res = stmt.executeQuery(sql);
-         * while (res.next()) { System.out.println(String.valueOf(res.getInt(1))
-         * + "\t" + res.getString(2)); }
-         * 
-         * // regular hive query sql = "select count(1) from " + tableName;
-         * System.out.println("Running: " + sql); res = stmt.executeQuery(sql);
-         * while (res.next()) { System.out.println(res.getString(1)); }
-         */
     }
 
-    
+    private static void dropTables(String databaseName, String[] tables, Statement stmt) throws SQLException
+    {
+        stmt.executeQuery("use " + databaseName);
+        List<String> dropTableQueryList = new ArrayList<String>();
+        for(String tableName : tables)
+        {
+            tableName = tableName.replace("-", "");
+            tableName = tableName.replace("_", "");
+            String tableDropQuery = dropTableCreationQuery(tableName);
+            dropTableQueryList.add(tableDropQuery);
+            System.out.println(tableDropQuery);
+        }
+        
+        
+        try { 
+            for(String dropQuery : dropTableQueryList)
+            {
+                stmt.executeQuery(dropQuery);
+            }
+
+        } catch(Throwable t) { 
+            t.printStackTrace();
+            System.exit(1);
+        } finally { 
+            //
+        }
+        
+    }
+
     /**
 CREATE EXTERNAL TABLE page_view_stg(viewTime INT, userid BIGINT,
                 page_url STRING, referrer_url STRING,
@@ -292,12 +355,22 @@ LOCATION '/user/data/staging/page_view';
         }
         
     }
+    //drop table if exists orders
+    
+    private static String dropTableCreationQuery(String targetTableName)
+    {
+        StringBuffer queryBuffer = new StringBuffer();
+        queryBuffer.append("drop table if exists " + targetTableName);
+        return queryBuffer.toString();
+    }
+    
     private static String createTableCreationQuery(String targetTableName, String customerName, String activeDBName, Map<String, Object> schemaMap)
     {
         StringBuffer queryBuffer = new StringBuffer();
         queryBuffer.append("create external table ");
         queryBuffer.append(targetTableName + "(");
         
+        String csvSeparator = ", "; 
         List<Object> cmdList = (List<Object>)schemaMap.get(Metadata.COLUMNDATALISTKEY);
         boolean hasColumns = false;
         for(int i=0;i<cmdList.size();i++)
@@ -308,24 +381,10 @@ LOCATION '/user/data/staging/page_view';
             queryBuffer.append(columnName + " ");
             String columnTypeName = columnMetadata.getColumnTypeName();
             String hiveTypeName = translateToHiveDataType(columnTypeName, columnMetadata.getPrecision(), columnMetadata.getScale());
-            queryBuffer.append(hiveTypeName + ", ");
+            queryBuffer.append(hiveTypeName + csvSeparator);
         }
-//        Iterator<String> keysIter = schemaMap.keySet().iterator();
-//        
-//        while(keysIter.hasNext())
-//        {
-//            hasColumns = true;
-//            String key = keysIter.next();
-//            ColumnMetadata columnMetadata = (ColumnMetadata) schemaMap.get(key);
-//            String columnName = columnMetadata.getColumnName(); 
-//            queryBuffer.append(columnName + " ");
-//            String columnTypeName = columnMetadata.getColumnTypeName();
-//            queryBuffer.append(columnTypeName + ", ");
-//        }
-        if(hasColumns)
-        {
-            queryBuffer.setLength(queryBuffer.length()-2);   
-        }
+        queryBuffer.append(GenericDataRecord.MVDB_IS_DELETED_COLUMN + " BOOLEAN");
+        //queryBuffer.setLength(queryBuffer.length()-csvSeparator.length()); 
         //  /data/alpha/db/mv2/schemaorders/schemaorders-r-00000
         String dataSource = "/data/" + customerName + "/db/" + activeDBName + "/" + targetTableName;
         queryBuffer.append(") row format serde 'com.mvdb.platform.action.TimeSliceSerde' stored as sequencefile location '" + dataSource + "'");
