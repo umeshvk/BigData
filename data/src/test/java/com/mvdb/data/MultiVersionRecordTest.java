@@ -1,4 +1,4 @@
-package com.mvdb.platform;
+package com.mvdb.data;
 
 import java.util.HashMap;
 import java.util.Map;
