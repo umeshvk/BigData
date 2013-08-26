@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 /**
  * This class handles interactions with Hadoop.
  * 
- * @author nbashir
+ * @author umesh
  * 
  */
 @Component
