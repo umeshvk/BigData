@@ -1,7 +1,7 @@
 package com.mvdb.platform.action.merge;
 
-import com.mvdb.etl.data.GenericDataRecord;
-import com.mvdb.etl.data.GenericIdRecord;
+import com.mvdb.data.GenericDataRecord;
+import com.mvdb.data.GenericIdRecord;
 
 public class TimestampData
 {

@@ -20,12 +20,14 @@ import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.mvdb.data.GenericDataRecord;
+import com.mvdb.data.GenericIdRecord;
+import com.mvdb.data.Metadata;
+import com.mvdb.data.MultiVersionRecord;
 import com.mvdb.etl.actions.ActionUtils;
-import com.mvdb.etl.data.GenericDataRecord;
-import com.mvdb.etl.data.GenericIdRecord;
-import com.mvdb.etl.data.Metadata;
 import com.mvdb.platform.action.MergeKey;
-import com.mvdb.platform.data.MultiVersionRecord;
+
+
 
 public class VersionMergeReducer extends Reducer<MergeKey, BytesWritable, Text, BytesWritable>
 {
@@ -134,11 +136,7 @@ public class VersionMergeReducer extends Reducer<MergeKey, BytesWritable, Text, 
                     Metadata metadata = (Metadata)record;
                     metadataSortedMap.put(metadata.getRefreshTimeStamp(), metadata);
                     System.out.println(metadata.toString());
-                } else 
-                { 
-                    int ii =0; 
-                    int jj = 0; 
-                }
+                } 
                 
             } catch (ClassNotFoundException e)
             {

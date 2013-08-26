@@ -1,4 +1,4 @@
-package com.mvdb.etl.data;
+package com.mvdb.data;
 
 import java.io.IOException;
 import java.io.ObjectInput;

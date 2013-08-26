@@ -1,4 +1,4 @@
-package com.mvdb.etl.data;
+package com.mvdb.data;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -9,7 +9,6 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.mvdb.etl.actions.ActionUtils;
 
 public class GenericIdRecord implements IdRecord
 {
@@ -19,7 +18,6 @@ public class GenericIdRecord implements IdRecord
 
     Object originalKeyValue; 
     String mvdbKeyValue; 
-    //Date mvdbUpdateTime;
     String refreshTimeStamp;
    
     public GenericIdRecord(Object originalKeyValue, MvdbKeyMaker mvdbKeyMaker, String refreshTimeStamp)
@@ -27,7 +25,6 @@ public class GenericIdRecord implements IdRecord
         this.originalKeyValue = originalKeyValue;
         this.mvdbKeyValue = mvdbKeyMaker.makeKey(originalKeyValue);
         this.refreshTimeStamp = refreshTimeStamp;
-        //this.mvdbUpdateTime = refreshTimeStamp;
     }
 
 
@@ -58,14 +55,8 @@ public class GenericIdRecord implements IdRecord
     
     public Date getMvdbUpdateTime()
     {      
-        return ActionUtils.getDate(refreshTimeStamp);
+        return DataUtils.getDate(refreshTimeStamp);
     }
-
-
-//    public void setMvdbUpdateTime(Date mvdbUpdateTime)
-//    {
-//        this.mvdbUpdateTime = mvdbUpdateTime;
-//    }
 
 
     public String getRefreshTimeStamp()

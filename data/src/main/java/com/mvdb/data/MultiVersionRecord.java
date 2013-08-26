@@ -1,4 +1,4 @@
-package com.mvdb.platform.data;
+package com.mvdb.data;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -9,7 +9,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import com.mvdb.etl.data.AnyRecord;
 
 public class MultiVersionRecord implements Externalizable
 {

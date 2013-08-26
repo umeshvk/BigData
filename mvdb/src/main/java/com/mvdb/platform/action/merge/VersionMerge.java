@@ -209,8 +209,7 @@ public class VersionMerge
                 
         //Metadata md = genericDAO.readMetadata(new File("/home/umesh/.mvdb/etl/data/alpha/20030115050607/schema-orderlineitem.dat").toURI().toString(), conf1);
         Metadata md = genericDAO.readMetadata("hdfs://localhost:9000/data/alpha/20030115050607/schema-orderlineitem.dat", conf);
-        int ii =0; 
-        int jj = ii; 
+
         
     }
 

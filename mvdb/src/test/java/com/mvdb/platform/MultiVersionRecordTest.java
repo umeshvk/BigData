@@ -7,8 +7,8 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
-import com.mvdb.etl.data.GenericDataRecord;
-import com.mvdb.platform.data.MultiVersionRecord;
+import com.mvdb.data.GenericDataRecord;
+import com.mvdb.data.MultiVersionRecord;
 
 /**
  * Unit test for simple App.

@@ -8,8 +8,7 @@ public class Test
      */
     public static void main(String[] args)
     {
-        ActionUtils.zipFullDirectory("/tmp/test.zip", "/tmp/testfolder");
-
+        ActionUtils.zipFullDirectory("/tmp/testfolder", "/tmp/test.zip");
     }
 
 }

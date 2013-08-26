@@ -18,6 +18,7 @@ import org.springframework.context.ApplicationContext;
 import com.mvdb.etl.dao.ConfigurationDAO;
 import com.mvdb.etl.dao.OrderDAO;
 import com.mvdb.etl.dao.OrderLineItemDAO;
+import com.mvdb.etl.data.DataUtils;
 import com.mvdb.etl.model.Order;
 import com.mvdb.etl.model.OrderLineItem;
 import com.mvdb.etl.monitoring.TimedExecutor;
@@ -69,12 +70,12 @@ public class InitCustomerData  implements IAction
             if (commandLine.hasOption("startDate"))
             {
                 String startDateStr = commandLine.getOptionValue("startDate");
-                startDate = ActionUtils.getDate(startDateStr);
+                startDate = DataUtils.getDate(startDateStr);
             }
             if (commandLine.hasOption("endDate"))
             {
                 String endDateStr = commandLine.getOptionValue("endDate");
-                endDate = ActionUtils.getDate(endDateStr);
+                endDate = DataUtils.getDate(endDateStr);
             }
         } catch (ParseException parseException) // checked exception
         {

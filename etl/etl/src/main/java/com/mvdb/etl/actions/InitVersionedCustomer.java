@@ -4,6 +4,8 @@ import java.util.Date;
 
 import org.codehaus.jettison.json.JSONException;
 
+import com.mvdb.etl.data.DataUtils;
+
 /**
  * Uses the four classes InitDB{1}, InitCustomerData{1}, ExtractDBChanges{1}, (ModifyCustomerData, ExtractDBChanges){0,} to create a VersionedCustomer 
  * @author umesh
@@ -22,8 +24,8 @@ public class InitVersionedCustomer
         String customerName = "alpha"; 
         int batchCount = 1; 
         int batchSize = 10; 
-        Date recordCreationTimeStartDate = ActionUtils.getDate("20020115050607"); 
-        Date recordCreationTimeEndDate = ActionUtils.getDate("20030115050607"); 
+        Date recordCreationTimeStartDate = DataUtils.getDate("20020115050607"); 
+        Date recordCreationTimeEndDate = DataUtils.getDate("20030115050607"); 
              
         ActionUtils.setUpInitFileProperty();
         InitDB.initDB();

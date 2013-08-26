@@ -40,18 +40,7 @@ public class ActionUtils
 {
     private static Logger     logger   = LoggerFactory.getLogger(ActionUtils.class);
 
-    private static SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-    public static Date getDate(String yyyyMMddHHmmss)
-    {
-        try
-        {
-            return sdf.parse(yyyyMMddHHmmss);
-        } catch (ParseException e)
-        {            
-            return null;
-        }
-        
-    }
+
     
     
     public static String getPassiveDBName(String customerName)

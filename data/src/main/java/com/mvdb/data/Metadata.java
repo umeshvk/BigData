@@ -1,4 +1,4 @@
-package com.mvdb.etl.data;
+package com.mvdb.data;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -27,20 +27,13 @@ public class Metadata implements AnyRecord, Externalizable, Comparable<Metadata>
 
     public static void main1(String[] args) throws IOException, ClassNotFoundException
     {
-//        ActionUtils.setUpInitFileProperty();
-//        ApplicationContext context = Top.getContext();
-//        GenericDAO genericDAO = (GenericDAO)context.getBean("genericDAO");
-//        
-//        org.apache.hadoop.conf.Configuration conf1 = new org.apache.hadoop.conf.Configuration();
-//        conf1.addResource(new Path("/home/umesh/ops/hadoop-1.2.0/conf/core-site.xml"));
-//        Metadata md = genericDAO.readMetadata("hdfs://localhost:9000/data/alpha/20030115050607/schema-orderlineitem.dat", conf1);
+
         Metadata m1 = new Metadata();
         m1.setCount(1);
         m1.setRefreshTimeStamp("20120101000000");
         m1.setSchemaName("schema");
         m1.setTableName("table");
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        //FileOutputStream fo = new FileOutputStream("tmp");
         ObjectOutputStream so = new ObjectOutputStream(baos);
         so.writeObject(m1);
         so.flush();
@@ -53,11 +46,7 @@ public class Metadata implements AnyRecord, Externalizable, Comparable<Metadata>
         
         System.out.println(m1);
         System.out.println(m2);
-        int ii =0; 
-        int jj = 0; 
-        
-
-        
+      
         
     }
     
@@ -173,34 +162,12 @@ public class Metadata implements AnyRecord, Externalizable, Comparable<Metadata>
                 output.writeObject(columnMetadata);
             }
         }
-        // output.writeInt(columnMetadataMap.size());
-        //
-        // Iterator<String> keysIter = columnMetadataMap.keySet().iterator();
-        // while(keysIter.hasNext())
-        // {
-        // String key = keysIter.next();
-        // Object value = columnMetadataMap.get(key);
-        // output.writeObject(key);
-        // output.writeObject(value);
-        // }
+
 
     }
 
     public static void main(String[] args) throws IOException, ClassNotFoundException
     {
-        /*
-        ActionUtils.setUpInitFileProperty();
-        ApplicationContext context = Top.getContext();
-        GenericDAO genericDAO = (GenericDAO) context.getBean("genericDAO");
-
-        org.apache.hadoop.conf.Configuration conf1 = new org.apache.hadoop.conf.Configuration();
-        conf1.addResource(new Path("/home/umesh/ops/hadoop-1.2.0/conf/core-site.xml"));
-        // Metadata md = genericDAO.readMetadata(new
-        // File("/home/umesh/.mvdb/etl/data/alpha/20030115050607/schema-orderlineitem.dat").toURI().toString(),
-        // conf1);
-        Metadata md = genericDAO.readMetadata(
-                "hdfs://localhost:9000/data/alpha/20030115050607/schema-orderlineitem.dat", conf1);
-        */
         
         Metadata m1 = new Metadata();
         m1.setCount(1);
@@ -241,8 +208,7 @@ public class Metadata implements AnyRecord, Externalizable, Comparable<Metadata>
         ois = new ObjectInputStream(bais);
         Metadata m3 = (Metadata) ois.readObject();
         System.out.println(m3);
-        int ii = 0;
-        int jj = 0;
+
 
     }
 
@@ -334,32 +300,6 @@ public class Metadata implements AnyRecord, Externalizable, Comparable<Metadata>
 
     }
 
-    /*
-     * @Override public void readFields(DataInput dataInput) throws IOException
-     * { count = dataInput.readInt(); schemaName = dataInput.readUTF();
-     * tableName = dataInput.readUTF();
-     * 
-     * 
-     * columnMetadataMap = new HashMap<String, ColumnMetadata>(); int keyCount =
-     * dataInput.readInt();
-     * 
-     * for(int i=0;i<keyCount;i++) { String key = (String)dataInput.readUTF();
-     * ColumnMetadata columnMetadata = new ColumnMetadata();
-     * columnMetadata.readFields(dataInput); columnMetadataMap.put(key,
-     * columnMetadata); }
-     * 
-     * }
-     * 
-     * @Override public void write(DataOutput dataOutput) throws IOException {
-     * dataOutput.writeInt(count); dataOutput.writeUTF(schemaName);
-     * dataOutput.writeUTF(tableName);
-     * 
-     * dataOutput.writeInt(columnMetadataMap.size());
-     * 
-     * Iterator<String> keysIter = columnMetadataMap.keySet().iterator();
-     * while(keysIter.hasNext()) { String key = keysIter.next(); ColumnMetadata
-     * value = columnMetadataMap.get(key); dataOutput.writeUTF(key);
-     * value.write(dataOutput); } }
-     */
+
 
 }
