@@ -154,7 +154,7 @@ public class VersionMerge
         long errorCount = counters.findCounter(VersionMergeCounter.ERROR_COUNTER).getValue();
         System.out.println("errorCount:" + errorCount);
         int counterCount = counters.countCounters();
-        
+        System.out.println("counterCount:" + counterCount);
         System.out.println("Success:" + success);
         
         
@@ -257,10 +257,10 @@ public class VersionMerge
         return lastTimestampDirName;
     }
 
-    public static String getCSV(Collection collection, String regex)
+    public static String getCSV(Collection<?> collection, String regex)
     {
         StringBuffer sb = new StringBuffer();
-        Iterator iter  = collection.iterator();
+        Iterator<?> iter  = collection.iterator();
         while(iter.hasNext())
         {
             String str = iter.next().toString(); 

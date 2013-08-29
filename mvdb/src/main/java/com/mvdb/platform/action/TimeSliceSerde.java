@@ -3,8 +3,6 @@ package com.mvdb.platform.action;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -27,7 +25,6 @@ import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoUtils;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.BytesWritable;
-import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
@@ -38,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import com.mvdb.data.MultiVersionRecord;
 import com.mvdb.etl.data.GenericDataRecord;
 
+@SuppressWarnings("deprecation")
 public class TimeSliceSerde implements SerDe
 {
     private static Logger logger = LoggerFactory.getLogger(TimeSliceSerde.class);

@@ -121,13 +121,7 @@ public class BinaryGenericConsumer implements GenericConsumer
     @Override
     public boolean consume(Metadata metadata)
     {
-        if(true)
-        {
-            throw new RuntimeException("Not Implemeted Yet");
-        }
-        return false;
+        throw new RuntimeException("Not Implemeted Yet");
     }
-
-
-
+    
 }

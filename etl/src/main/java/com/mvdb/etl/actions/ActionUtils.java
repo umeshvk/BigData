@@ -77,10 +77,10 @@ public class ActionUtils
         return result; 
     }
     
-    public static String getCSV(Collection collection, String regex)
+    public static String getCSV(Collection<?> collection, String regex)
     {
         StringBuffer sb = new StringBuffer();
-        Iterator iter  = collection.iterator();
+        Iterator<?> iter  = collection.iterator();
         while(iter.hasNext())
         {
             String str = iter.next().toString(); 

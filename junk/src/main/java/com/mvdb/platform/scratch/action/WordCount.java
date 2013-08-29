@@ -17,14 +17,6 @@ import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ch.qos.logback.core.util.StatusPrinter;
-//import ch.qos.logback.classic.LoggerContext;
-//import ch.qos.logback.core.util.StatusPrinter;
-
-
-
-
-
 
 public class WordCount {
     private static Logger logger = LoggerFactory.getLogger(WordCount.class);

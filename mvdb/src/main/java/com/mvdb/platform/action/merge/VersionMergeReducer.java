@@ -27,6 +27,7 @@ import com.mvdb.data.MultiVersionRecord;
 import com.mvdb.etl.actions.ActionUtils;
 import com.mvdb.platform.action.MergeKey;
 
+import org.apache.hadoop.mapreduce.Reducer.Context;
 
 
 public class VersionMergeReducer extends Reducer<MergeKey, BytesWritable, Text, BytesWritable>
@@ -84,7 +85,7 @@ public class VersionMergeReducer extends Reducer<MergeKey, BytesWritable, Text, 
     }
 
     private void writeSchemaRecord(MergeKey mergeKey, Iterable<BytesWritable> values,
-            org.apache.hadoop.mapreduce.Reducer.Context context) throws IOException, InterruptedException
+            Context context) throws IOException, InterruptedException
     {
         MultiVersionRecord mvr = getSchemaMVR(mergeKey, values, context);               
         ByteArrayOutputStream bos = new ByteArrayOutputStream();

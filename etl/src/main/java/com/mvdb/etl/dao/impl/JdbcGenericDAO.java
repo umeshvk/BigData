@@ -246,8 +246,8 @@ public class JdbcGenericDAO extends JdbcDaoSupport implements GenericDAO
             @Override
             public void processRow(ResultSet row) throws SQLException
             {
-                final Map<String, Object> dataMap = new HashMap<String, Object>();
-                ResultSetMetaData rsm = row.getMetaData();               
+//                final Map<String, Object> dataMap = new HashMap<String, Object>();
+//                ResultSetMetaData rsm = row.getMetaData();               
                 Object originalKeyValue = row.getObject(1);
                 IdRecord idRecord = new GenericIdRecord(originalKeyValue , globalMvdbKeyMaker, snapShotDirName);
                 genericConsumer.consume(idRecord);

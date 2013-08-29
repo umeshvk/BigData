@@ -1,12 +1,5 @@
 package com.mvdb.platform;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import com.mvdb.etl.data.GenericDataRecord;
-
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;

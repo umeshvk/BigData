@@ -5,6 +5,11 @@ import java.io.Serializable;
 public class Configuration implements Serializable
 {
     
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+    
     String customer;
     String name;
     String value;
