@@ -82,7 +82,7 @@
 			<version>1.2.0</version>
 		</dependency>
 		<dependency>
-			<groupId>com.mvdb.etl</groupId>
+			<groupId>com.mvdb</groupId>
 			<artifactId>etl</artifactId>
 			<version>0.0.1</version>
 		</dependency>

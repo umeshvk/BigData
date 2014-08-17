@@ -27,13 +27,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 
+import com.mvdb.data.Metadata;
 import com.mvdb.etl.actions.ActionUtils;
 import com.mvdb.etl.actions.ConfigurationKeys;
 import com.mvdb.etl.actions.Top;
 import com.mvdb.etl.dao.GenericDAO;
-import com.mvdb.etl.data.Metadata;
 import com.mvdb.platform.action.MergeKey;
 
+/**
+ * The argument to this Map-Reduce job must be  file:<local file system path>/data/alpha or hdfs://hostname:port/data/alpha
+ * An argument like /data/alpha will be rejected and program will exit. 
+ * @author umesh
+ *
+ */
 public class VersionMerge
 {
     private static Logger logger = LoggerFactory.getLogger(VersionMerge.class);
@@ -43,8 +49,17 @@ public class VersionMerge
 
         ActionUtils.setUpInitFileProperty();
 
+        FsType fsType = getIsLocal(args);
+        if(fsType == FsType.AMBIBGUOUS)
+        {
+            System.err.println("Usage: versionmerge <customer-directory>. <customer-directory> must either start with hdfs: or file: ");
+            System.exit(1);
+        }
         org.apache.hadoop.conf.Configuration configuration = new org.apache.hadoop.conf.Configuration();
-        configuration.addResource(new Path("/home/umesh/ops/hadoop-1.2.0/conf/core-site.xml"));
+        if(fsType == FsType.HDFS)
+        {
+            configuration.addResource(new Path("/home/umesh/ops/hadoop-1.2.0/conf/core-site.xml"));
+        }
         String[] otherArgs = new GenericOptionsParser(configuration, args).getRemainingArgs();
         //Also add  lastMergedTimeStamp and  mergeUptoTimestamp and passive db name which would be mv1 or mv2
         if (otherArgs.length != 1)
@@ -202,6 +217,28 @@ public class VersionMerge
         System.exit(0);
     }
     
+    enum FsType  { 
+        LOCALFS, 
+        HDFS, 
+        AMBIBGUOUS
+    }
+    
+    private static FsType getIsLocal(String[] args)
+    {
+        for(String arg : args)
+        {
+            if(arg.startsWith("file:"))
+            {
+                return FsType.LOCALFS;
+            }
+            if(arg.startsWith("hdfs:"))
+            {
+                return FsType.HDFS;
+            }
+        }
+        return FsType.AMBIBGUOUS;
+    }
+
     private static void testMD(Configuration conf)
     {
         ApplicationContext context = Top.getContext();

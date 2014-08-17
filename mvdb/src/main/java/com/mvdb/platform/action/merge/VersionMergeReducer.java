@@ -20,14 +20,13 @@ import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.mvdb.data.DataUtils;
 import com.mvdb.data.GenericDataRecord;
 import com.mvdb.data.GenericIdRecord;
 import com.mvdb.data.Metadata;
 import com.mvdb.data.MultiVersionRecord;
 import com.mvdb.etl.actions.ActionUtils;
 import com.mvdb.platform.action.MergeKey;
-
-import org.apache.hadoop.mapreduce.Reducer.Context;
 
 
 public class VersionMergeReducer extends Reducer<MergeKey, BytesWritable, Text, BytesWritable>
@@ -281,7 +280,7 @@ public class VersionMergeReducer extends Reducer<MergeKey, BytesWritable, Text, 
                 deleteRecord.setRefreshTimeStamp(gdr.getRefreshTimeStamp());
                 deleteRecord.setMvdbKeyValue(gdr.getMvdbKeyValue());
                 deleteRecord.setDeleted(true);                   
-                deleteRecord.setMvdbUpdateTime(ActionUtils.getDate(gdr.getRefreshTimeStamp()));   
+                deleteRecord.setMvdbUpdateTime(DataUtils.getDate(gdr.getRefreshTimeStamp()));   
                 mvr.addLatestVersion(deleteRecord);
             }                
             else if(gdr == null && gir == null)
@@ -305,8 +304,8 @@ public class VersionMergeReducer extends Reducer<MergeKey, BytesWritable, Text, 
                     deleteRecord.setRefreshTimeStamp(timestamp);
                     deleteRecord.setMvdbKeyValue(lastGDR.getMvdbKeyValue());
                     deleteRecord.setDeleted(true);                   
-                    deleteRecord.setMvdbUpdateTime(ActionUtils.getDate(timestamp)); 
-                    deleteRecord.setTimeStampLongValue(ActionUtils.getDate(timestamp).getTime());
+                    deleteRecord.setMvdbUpdateTime(DataUtils.getDate(timestamp)); 
+                    deleteRecord.setTimeStampLongValue(DataUtils.getDate(timestamp).getTime());
                     mvr.addLatestVersion(deleteRecord);
                 }
                 

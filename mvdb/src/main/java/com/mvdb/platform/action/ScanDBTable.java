@@ -15,11 +15,11 @@ import org.apache.hadoop.io.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.mvdb.data.GenericDataRecord;
+import com.mvdb.data.GenericIdRecord;
+import com.mvdb.data.IdRecord;
 import com.mvdb.data.MultiVersionRecord;
 import com.mvdb.etl.actions.ScanDBChanges;
-import com.mvdb.etl.data.GenericDataRecord;
-import com.mvdb.etl.data.GenericIdRecord;
-import com.mvdb.etl.data.IdRecord;
 
 public class ScanDBTable
 {
@@ -33,8 +33,9 @@ public class ScanDBTable
         //ScanDBTable.scan("/home/umesh/.mvdb/etl/data/alpha/20030131050607/ids-orders.dat"); 
         ///home/umesh/.mvdb/etl/data/alpha/20030117050607
         //ScanDBTable.scan("/home/umesh/.mvdb/etl/data/alpha/db/tmp-49728/orders-r-00000"); 
-        ScanDBTable.scanHdfsFile("hdfs://localhost:9000/data/alpha/db/mv2/orders/orders-r-00000"); 
-        
+        //ScanDBTable.scanHdfsFile("hdfs://localhost:9000/data/alpha/db/mv2/orders/orders-r-00000"); 
+        //
+        ScanDBTable.scanLocalFile("/home/umesh/.mvdb/etl/data/alpha/20030117050607/data-orderlineitem.dat"); 
     }
 
     public static boolean scanHdfsFile(String dataFileName)
@@ -52,8 +53,8 @@ public class ScanDBTable
     {
         File dataFile = new File(dataFileName);
         Configuration conf = new Configuration();
-        conf.addResource(new Path("/home/umesh/ops/hadoop-1.2.0/conf/core-site.xml"));
-        Path path = new Path(dataFile.getAbsolutePath());
+        //conf.addResource(new Path("/home/umesh/ops/hadoop-1.2.0/conf/core-site.xml"));
+        Path path = new Path("file:" + dataFile.getAbsolutePath());
         
         return scan(path, conf);
     }
@@ -76,6 +77,7 @@ public class ScanDBTable
                 ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
                 ObjectInputStream ois = new ObjectInputStream(bis);
                 Object object = ois.readObject();
+                System.out.println("object type:" + object.getClass().getCanonicalName());
                 if(object instanceof GenericDataRecord)
                 {
                     GenericDataRecord dr = (GenericDataRecord) object;

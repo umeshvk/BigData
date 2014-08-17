@@ -82,7 +82,7 @@ Step 3: Create the metastore database and user account
 
 Proceed as in the following example:
 
-bash# sudo –u postgres psql
+bash# sudo -u  postgres psql
 bash$ psql
 postgres=# CREATE USER hiveuser WITH PASSWORD 'mypassword';
 postgres=# CREATE DATABASE metastore;
@@ -95,7 +95,7 @@ SET
 
 Now you need to grant permission for all metastore tables to user hiveuser. PostgreSQL does not have statements to grant the permissions for all tables at once; you'll need to grant the permissions one table at a time. You could automate the task with the following SQL script:
 
-bash# sudo –u postgres psql
+bash# sudo -u  postgres psql
 metastore=#         \o /tmp/grant-privs
 metastore=#         SELECT 'GRANT SELECT,INSERT,UPDATE,DELETE ON "'  || schemaname || '"."' || tablename || '" TO hiveuser ;'
 metastore-#           FROM pg_tables
@@ -105,7 +105,7 @@ metastore=#         \i /tmp/grant-privs
 
 You can verify the connection from the machine where you'll be running the metastore service as follows:
 
-psql –h myhost –U hiveuser –d metastore
+psql -h  myhost -U hiveuser -d  metastore
 metastore=#
 
 Step 4: Configure the Metastore Service to Communicate with the PostgreSQL Database
@@ -152,4 +152,4 @@ Given a PostgreSQL database running on host myhost under the user account hive w
 
 Step 6: Test connectivity to the metastore:
 
-$ hive –e “show tables;”
+$ hive -e  "show tables;"

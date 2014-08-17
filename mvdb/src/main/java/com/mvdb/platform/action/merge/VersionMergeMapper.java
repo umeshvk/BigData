@@ -22,6 +22,7 @@ public  class VersionMergeMapper extends Mapper<Text, BytesWritable, MergeKey, B
         System.out.println(ManagementFactory.getRuntimeMXBean().getName());
         FileSplit fileSplit = (FileSplit)context.getInputSplit();
         String filename = fileSplit.getPath().getName();
+        System.out.println("filename:" + filename);
         if(filename.contains("-r-") == true)
         {
             String fn = fileSplit.getPath().getParent().getName();

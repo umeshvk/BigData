@@ -32,8 +32,8 @@ import org.apache.hadoop.io.Writable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.mvdb.data.GenericDataRecord;
 import com.mvdb.data.MultiVersionRecord;
-import com.mvdb.etl.data.GenericDataRecord;
 
 @SuppressWarnings("deprecation")
 public class TimeSliceSerde implements SerDe
